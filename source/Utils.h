@@ -20,12 +20,19 @@ namespace dae
 
 			float discriminant = b * b - 4 * a * c;  // Discriminant
 
-			if (discriminant > 0)
+			if (discriminant >= 0)
 			{
-				float t = (-b - sqrt(discriminant)) / (2 * a);  // First intersection point
+				float sqrtDiscriminant = sqrtf(discriminant);
 
-				if (ray.min <= t && t <= ray.max)
+				// Calculate both intersection points
+				float t1 = (-b - sqrtDiscriminant) / (2 * a);
+				float t2 = (-b + sqrtDiscriminant) / (2 * a);
+
+				// Check if the intersection points are within the valid range
+				if ((t1 >= ray.min && t1 <= ray.max) || (t2 >= ray.min && t2 <= ray.max))
 				{
+					float t = (t1 < ray.min) ? t2 : t1;
+
 					if (!ignoreHitRecord)
 					{
 						hitRecord.t = t;
@@ -37,24 +44,10 @@ namespace dae
 
 					return true;
 				}
-				else if (t < ray.min)
-				{
-					if (!ignoreHitRecord)
-					{
-						float t2 = (-b + sqrtf(discriminant)) / (2 * a);
-						hitRecord.t = t2;
-						hitRecord.didHit = true;
-						hitRecord.origin = ray.origin + t * ray.direction;
-						hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
-						hitRecord.materialIndex = sphere.materialIndex;
-					}
-
-					return true;
-
-				}
 			}
 
 			return false;
+		
 		}
 
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray)

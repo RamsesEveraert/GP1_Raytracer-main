@@ -31,24 +31,18 @@ namespace dae {
 		for (const Sphere& sphere : m_SphereGeometries)
 		{
 			HitRecord temp{};
-			if (GeometryUtils::HitTest_Sphere(sphere, ray, temp))
+			if (GeometryUtils::HitTest_Sphere(sphere, ray, temp) && temp.t < closestHit.t)
 			{
-				if (temp.t < closestHit.t)
-				{
-					closestHit = temp;
-				}
+				closestHit = temp;
 			}
 		}
 
 		for (const Plane& plane : m_PlaneGeometries)
 		{
 			HitRecord temp{};
-			if (GeometryUtils::HitTest_Plane(plane, ray, temp))
+			if (GeometryUtils::HitTest_Plane(plane, ray, temp) && temp.t < closestHit.t)
 			{
-				if (temp.t < closestHit.t)
-				{
 					closestHit = temp;
-				}
 			}
 		}
 	}

@@ -28,6 +28,8 @@ void Renderer::Render(Scene* pScene) const
 	auto& lights = pScene->GetLights();
 
 	const float aspectRatio{ static_cast<float>(m_Width) / static_cast<float>(m_Height) };
+	const float invWidth = 1.0f / m_Width;
+	const float invHeight = 1.0f / m_Height;
 
 	for (int px{}; px < m_Width; ++px)
 	{
@@ -37,26 +39,25 @@ void Renderer::Render(Scene* pScene) const
 			gradient += py / static_cast<float>(m_Width);
 			gradient /= 2.0f;
 
-			Vector3 rayDirection{};
+			// Calculate ray direction
+			float x = (2 * (px + 0.5f) * invWidth - 1) * aspectRatio;
+			float y = 1 - 2 * (py + 0.5f) * invHeight;
+			Vector3 rayDirection = Vector3(x, y, 1).Normalized();
 
-			rayDirection.x = ((2 * (px + 0.5f) / m_Width) - 1.f) * aspectRatio;
-			rayDirection.y = 1.f - (2 * (py + 0.5f) / m_Height);
-			rayDirection.z = 1.f;
-			rayDirection.Normalize(); // oplossen van wegsmijten van kleuren als buiten [-1,1]is
-			Ray viewRay{ Vector3{0,0,0},  rayDirection };
+			Ray viewRay(Vector3{ 0, 0, 0 }, rayDirection);
 
 			ColorRGB finalColor{ rayDirection.x, rayDirection.y, rayDirection.z };
 
 			HitRecord closestHit{};
-			/*Sphere testSphere{ Vector3{0.f,0.f,100.f}, 50.f, 0 };*/
 
+			// Perform ray-object intersection tests
 			pScene->GetClosestHit(viewRay, closestHit);
 
 			if (closestHit.didHit)
 			{
+				// Perform shading calculations
 				const float scaled_t = (closestHit.t - 50.f) / 40.f;
 				finalColor = materials[closestHit.materialIndex]->Shade();
-				//finalColor = ColorRGB{ scaled_t ,scaled_t ,scaled_t };
 			}
 
 			//Update Color in Buffer
