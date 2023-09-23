@@ -27,7 +27,7 @@ void Renderer::Render(Scene* pScene) const
 	auto& materials = pScene->GetMaterials();
 	auto& lights = pScene->GetLights();
 
-	const int aspectRatio{ m_Width / m_Height };
+	const float aspectRatio{ static_cast<float>(m_Width) / static_cast<float>(m_Height) };
 
 	for (int px{}; px < m_Width; ++px)
 	{
@@ -48,13 +48,15 @@ void Renderer::Render(Scene* pScene) const
 			ColorRGB finalColor{ rayDirection.x, rayDirection.y, rayDirection.z };
 
 			HitRecord closestHit{};
-			Sphere testSphere{ Vector3{0.f,0.f,100.f}, 50.f, 0 };
+			/*Sphere testSphere{ Vector3{0.f,0.f,100.f}, 50.f, 0 };*/
 
-			GeometryUtils::HitTest_Sphere(testSphere, viewRay, closestHit);
+			pScene->GetClosestHit(viewRay, closestHit);
 
 			if (closestHit.didHit)
 			{
+				const float scaled_t = (closestHit.t - 50.f) / 40.f;
 				finalColor = materials[closestHit.materialIndex]->Shade();
+				//finalColor = ColorRGB{ scaled_t ,scaled_t ,scaled_t };
 			}
 
 			//Update Color in Buffer

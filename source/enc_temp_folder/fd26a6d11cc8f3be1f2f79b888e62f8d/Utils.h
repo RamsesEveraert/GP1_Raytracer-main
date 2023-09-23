@@ -30,7 +30,7 @@ namespace dae
 					{
 						hitRecord.t = t;
 						hitRecord.didHit = true;
-						hitRecord.origin = ray.origin + t * ray.direction;
+						hitRecord.origin = ray.origin + t * ray.direction.Normalized();
 						hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
 						hitRecord.materialIndex = sphere.materialIndex;
 					}
@@ -44,7 +44,7 @@ namespace dae
 						float t2 = (-b + sqrtf(discriminant)) / (2 * a);
 						hitRecord.t = t2;
 						hitRecord.didHit = true;
-						hitRecord.origin = ray.origin + t * ray.direction;
+						hitRecord.origin = ray.origin + t * ray.direction.Normalized();
 						hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
 						hitRecord.materialIndex = sphere.materialIndex;
 					}
