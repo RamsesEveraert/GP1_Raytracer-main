@@ -12,6 +12,7 @@ namespace dae
 		//SPHERE HIT-TESTS
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
+			//TODO w1
 			Vector3 originRayToCenterCircle = ray.origin - sphere.origin;
 
 			float a = Vector3::Dot(ray.direction, ray.direction);
@@ -20,30 +21,43 @@ namespace dae
 
 			float discriminant = b * b - 4 * a * c;  // Discriminant
 
+
 			if (discriminant >= 0)
 			{
 				float sqrtDiscriminant = sqrtf(discriminant);
 
 				// Calculate both intersection points
 				float t1 = (-b - sqrtDiscriminant) / (2 * a);
-				float t2 = (-b + sqrtDiscriminant) / (2 * a);
 
-				// Check if the intersection points are within the valid range
-				if ((t1 >= ray.min && t1 <= ray.max) || (t2 >= ray.min && t2 <= ray.max))
+				if (t1 >= ray.min && t1 <= ray.max)
 				{
-					float t = (t1 < ray.min) ? t2 : t1;
 
-					if (!ignoreHitRecord)
+					if (!ignoreHitRecord && t1 < hitRecord.t)
 					{
-						hitRecord.t = t;
+						hitRecord.t = t1;
 						hitRecord.didHit = true;
-						hitRecord.origin = ray.origin + t * ray.direction;
+						hitRecord.origin = ray.origin + t1 * ray.direction;
 						hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
 						hitRecord.materialIndex = sphere.materialIndex;
 					}
 
 					return true;
 				}
+				float t2 = (-b + sqrtDiscriminant) / (2 * a);
+				if (t2 >= ray.min && t2 <= ray.max)
+				{
+					if (!ignoreHitRecord && t2 < hitRecord.t)
+					{
+						hitRecord.t = t2;
+						hitRecord.didHit = true;
+						hitRecord.origin = ray.origin + t2 * ray.direction;
+						hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
+						hitRecord.materialIndex = sphere.materialIndex;
+					}
+
+					return true;
+				}
+				
 			}
 
 			return false;
@@ -60,11 +74,13 @@ namespace dae
 		//PLANE HIT-TESTS
 		inline bool HitTest_Plane(const Plane& plane, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
+
+			//TODO w1
 			const float t = Vector3::Dot((plane.origin - ray.origin), plane.normal) / Vector3::Dot(ray.direction, plane.normal);
 
 			if (ray.min <= t && t <= ray.max)
 			{
-				if (!ignoreHitRecord)
+				if (!ignoreHitRecord && t < hitRecord.t)
 				{
 					hitRecord.t = t;
 					hitRecord.didHit = true;
