@@ -27,9 +27,15 @@ void Renderer::Render(Scene* pScene) const
 	auto& materials = pScene->GetMaterials();
 	auto& lights = pScene->GetLights();
 
+	// window ratio
+
 	const float aspectRatio{ static_cast<float>(m_Width) / static_cast<float>(m_Height) };
-	const float invWidth = 1.0f / m_Width;
-	const float invHeight = 1.0f / m_Height;
+	const float invWidth{ 1.0f / m_Width };
+	const float invHeight{ 1.0f / m_Height };
+
+	// camera
+
+	const float FOV{ TO_RADIANS * camera.fovAngle };
 
 	for (int px{}; px < m_Width; ++px)
 	{
@@ -39,12 +45,13 @@ void Renderer::Render(Scene* pScene) const
 			gradient += py / static_cast<float>(m_Width);
 			gradient /= 2.0f;
 
-			// Calculate ray direction
-			float x = (2 * (px + 0.5f) * invWidth - 1) * aspectRatio;
-			float y = 1 - 2 * (py + 0.5f) * invHeight;
+			// Calculate ray direction camera
+			float x = (2 * (px + 0.5f) * invWidth - 1) * aspectRatio * FOV;
+			float y = (1 - 2 * (py + 0.5f) * invHeight) * FOV;
 			Vector3 rayDirection = Vector3(x, y, 1).Normalized();
-
-			Ray viewRay(Vector3{ 0, 0, 0 }, rayDirection);
+			
+			//Ray viewRay(Vector3{}, rayDirection);
+			Ray viewRay(camera.origin, rayDirection);
 
 			ColorRGB finalColor{ rayDirection.x, rayDirection.y, rayDirection.z };
 

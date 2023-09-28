@@ -39,6 +39,13 @@ namespace dae
 			return {};
 		}
 
+		float GetFOV(float zoomDistance = 1.f, float scaleFactor = 1.f)
+		{
+			float result{};
+			result = 2 * (atan(scaleFactor / zoomDistance));
+			return result;
+		}
+
 		void Update(Timer* pTimer)
 		{
 			const float deltaTime = pTimer->GetElapsed();
