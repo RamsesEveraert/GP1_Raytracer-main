@@ -41,10 +41,6 @@ void Renderer::Render(Scene* pScene) const
 	{
 		for (int py{}; py < m_Height; ++py)
 		{
-			float gradient = px / static_cast<float>(m_Width);
-			gradient += py / static_cast<float>(m_Width);
-			gradient /= 2.0f;
-
 			// Calculate ray direction camera
 			float x = (2 * (px + 0.5f) * invWidth - 1) * aspectRatio * FOV;
 			float y = (1 - 2 * (py + 0.5f) * invHeight) * FOV;

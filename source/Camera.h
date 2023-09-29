@@ -34,9 +34,14 @@ namespace dae
 
 		Matrix CalculateCameraToWorld()
 		{
-			//todo: W2
-			assert(false && "Not Implemented Yet");
-			return {};
+			//todo: W2 
+			
+			auto translation = Matrix::CreateTranslation(origin);
+			auto rotation = Matrix::CreateRotationX(totalPitch) * Matrix::CreateRotationY(totalYaw);
+
+			cameraToWorld = rotation * translation;
+			return cameraToWorld;
+
 		}
 
 		float GetFOV(float zoomDistance = 1.f, float scaleFactor = 1.f)
