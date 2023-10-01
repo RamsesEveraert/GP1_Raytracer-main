@@ -35,21 +35,19 @@ void Renderer::Render(Scene* pScene) const
 
 	// camera
 
-	const float FOV{ TO_RADIANS * camera.fovAngle };
-
 	for (int px{}; px < m_Width; ++px)
 	{
 		for (int py{}; py < m_Height; ++py)
 		{
 			// Calculate ray direction camera
-			float cx = (2 * (px + 0.5f) * invWidth - 1) * aspectRatio * FOV;
-			float cy = (1 - 2 * (py + 0.5f) * invHeight) * FOV;
+			float cx = (2 * (px + 0.5f) * invWidth - 1) * aspectRatio * camera.fov;
+			float cy = (1 - 2 * (py + 0.5f) * invHeight) * camera.fov;
 			Vector3 rayDirection = Vector3(cx, cy, 1).Normalized();
 			
 			rayDirection = camera.cameraToWorld.TransformVector(rayDirection);
 			Ray viewRay(camera.origin, rayDirection);
 
-			ColorRGB finalColor{ rayDirection.x, rayDirection.y, rayDirection.z };
+			ColorRGB finalColor{};
 
 			HitRecord closestHit{};
 
@@ -59,8 +57,20 @@ void Renderer::Render(Scene* pScene) const
 			if (closestHit.didHit)
 			{
 				// Perform shading calculations
-				const float scaled_t = (closestHit.t - 50.f) / 40.f;
 				finalColor = materials[closestHit.materialIndex]->Shade();
+				for (auto& light : lights)
+				{
+					const Vector3 lightRayDirection{ light.origin - closestHit.origin };
+					const Vector3 lightRayOrigin{ closestHit.origin + closestHit.normal * 0.00001f };
+
+					Ray lightRay{ lightRayOrigin, lightRayDirection.Normalized() };
+					lightRay.max = lightRayDirection.Magnitude();
+
+					if (pScene->DoesHit(lightRay))
+					{
+						finalColor *= 0.5f;
+					}
+				}
 			}
 
 			//Update Color in Buffer

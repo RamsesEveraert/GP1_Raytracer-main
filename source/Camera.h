@@ -15,7 +15,9 @@ namespace dae
 		Camera(const Vector3& _origin, float _fovAngle):
 			origin{_origin},
 			fovAngle{_fovAngle}
+			
 		{
+			SetFOV(_fovAngle);
 		}
 
 
@@ -30,6 +32,12 @@ namespace dae
 		float totalYaw{0.f};
 
 		Matrix cameraToWorld{};
+		float fov;
+
+		void SetFOV(float fovAngle)
+		{
+			fov = tanf(TO_RADIANS * fovAngle * 0.5f);
+		}
 
 
 		Matrix CalculateCameraToWorld()
@@ -92,22 +100,22 @@ namespace dae
 
 			if (isLeftMousePressed && isMouseMoving)
 			{
-				// Move camera forward or backward and rotate based on mouse movement
-				origin += mouseY * forward * translateSpeed * deltaTime;
-				totalYaw += mouseX * rotateSpeed * deltaTime;
+				// Move camera forward or backward and rotate based on mouse movement 
+				origin += translateSpeed * mouseY * forward * deltaTime;
+				totalYaw += rotateSpeed * mouseX  * deltaTime;
 			}
 
 			if (isRightMousePressed && isMouseMoving)
 			{
 				// rotate camera based on mouse movement
-				totalPitch += mouseY * rotateSpeed * deltaTime;
-				totalYaw += mouseX * rotateSpeed * deltaTime;
+				totalPitch += rotateSpeed * mouseY * deltaTime;
+				totalYaw += rotateSpeed * mouseX * deltaTime;
 			}
 
 			// Move camera up or down based on mouse movement
 			if (isDraggingUp)
 			{
-				origin += mouseY * localSpaceUp * translateSpeed * deltaTime;
+				origin += translateSpeed * mouseY * localSpaceUp * deltaTime;
 			}
 
 			
