@@ -105,15 +105,13 @@ namespace dae {
 	Matrix Matrix::CreateTranslation(float x, float y, float z)
 	{
 		//todo W2
-		Matrix result
-		{
-			{1, 0, 0, 0},
-			{0, 1, 0, 0},
-			{0, 0, 1, 0},
-			{x, y, z, 1}
-		};
-
-		return result;
+	return 
+	{
+		{1, 0, 0, 0},
+		{0, 1, 0, 0},
+		{0, 0, 1, 0},
+		{x, y, z, 1}
+	};
 
 	}
 
@@ -125,53 +123,52 @@ namespace dae {
 	Matrix Matrix::CreateRotationX(float pitch)
 	{
 		//todo W2
-		Matrix result
-		{
-			{1, 0, 0, 0},
-			{0, cosf(pitch), -sinf(pitch), 0},
-			{0, sinf(pitch), cosf(pitch), 0},
-			{0, 0, 0, 1}
-		};
+		const float cosPitch{ cosf(pitch) };
+		const float sinPitch{ sinf(pitch) };		
 
-		return result;
+		return 
+		{
+			{1, 0			, 0			, 0},
+			{0, cosPitch	, sinPitch	, 0},
+			{0, -sinPitch	, cosPitch	, 0},
+			{0, 0			, 0			, 1}
+		};
 	}
 
 	Matrix Matrix::CreateRotationY(float yaw)
 	{
 		//todo W2
-		Matrix result
-		{
-			{cosf(yaw), 0, sinf(yaw), 0},
-			{0, 1, 0, 0},
-			{-sinf(yaw), 0, cosf(yaw), 0},
-			{0, 0, 0, 1}
-		};
+		const float cosYaw{ cosf(yaw) };
+		const float sinYaw{ sinf(yaw) };		
 
-		return result;
+		return
+		{
+			{cosYaw	, 0	, -sinYaw	, 0},
+			{0		, 1	, 0			, 0},
+			{sinYaw	, 0	, cosYaw	, 0},
+			{0		, 0	, 0			, 1}
+		};
 	}
 
 	Matrix Matrix::CreateRotationZ(float roll)
 	{
 		//todo W2
-		Matrix result
-		{
-			{cosf(roll), -sinf(roll), 0, 0},
-			{sinf(roll), cosf(roll), 0, 0},
-			{0, 0, 1, 0},
-			{0, 0, 0, 1}
-		};
+		const float cosRoll{ cosf(roll) };
+		const float sinRoll{ sinf(roll) };
 
-		return result;
+		return
+		{
+			{cosRoll	, sinRoll	, 0, 0},
+			{-sinRoll	, cosRoll	, 0, 0},
+			{0			, 0			, 1, 0},
+			{0			, 0			, 0, 1}
+		};
 	}
 
 	Matrix Matrix::CreateRotation(const Vector3& r)
 	{
 		//todo W2
-		Matrix rotationX = CreateRotationX(r.x); 
-		Matrix rotationY = CreateRotationY(r.y);
-		Matrix rotationZ = CreateRotationZ(r.z);
-
-		Matrix result = rotationX * rotationY * rotationZ;
+		Matrix result = (CreateRotationX(r.x) * CreateRotationY(r.y) * CreateRotationZ(r.z));
 
 		return result;
 	}
@@ -184,15 +181,14 @@ namespace dae {
 	Matrix Matrix::CreateScale(float sx, float sy, float sz)
 	{
 		//todo W2
-		Matrix result
+	
+		return
 		{
-			{sx, 0, 0, 0},
-			{0, sy, 0, 0},
-			{0, 0, sz, 0},
-			{0, 0, 0, 1}
+			{sx	, 0		, 0		, 0},
+			{0	, sy	, 0		, 0},
+			{0	, 0		, sz	, 0},
+			{0	, 0		, 0		, 1}
 		};
-
-		return result;
 	}
 
 	Matrix Matrix::CreateScale(const Vector3& s)

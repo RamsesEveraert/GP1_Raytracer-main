@@ -36,10 +36,10 @@ namespace dae
 		{
 			//todo: W2 
 			
-			auto translation = Matrix::CreateTranslation(origin);
-			auto rotation = Matrix::CreateRotationX(totalPitch) * Matrix::CreateRotationY(totalYaw);
+			auto translationMatrix = Matrix::CreateTranslation(origin);
+			auto rotationMatrix = Matrix::CreateRotationX(totalPitch) * Matrix::CreateRotationY(totalYaw);
 
-			cameraToWorld = rotation * translation;
+			cameraToWorld = rotationMatrix * translationMatrix;
 			return cameraToWorld;
 
 		}
