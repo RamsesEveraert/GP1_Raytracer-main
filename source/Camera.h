@@ -44,13 +44,6 @@ namespace dae
 
 		}
 
-		float GetFOV(float zoomDistance = 1.f, float scaleFactor = 1.f)
-		{
-			float result{};
-			result = 2 * (atan(scaleFactor / zoomDistance));
-			return result;
-		}
-
 		void Update(Timer* pTimer)
 		{
 			const float deltaTime = pTimer->GetElapsed();
@@ -64,7 +57,66 @@ namespace dae
 			const uint32_t mouseState = SDL_GetRelativeMouseState(&mouseX, &mouseY);
 
 			//todo: W2
-			//assert(false && "Not Implemented Yet");
+
+			const float translateSpeed{ 10.f };
+			const float rotateSpeed{ .5f };
+
+			// Calculate movement directions based on keyboard input
+			int8_t zDirection{ pKeyboardState[SDL_SCANCODE_W] - pKeyboardState[SDL_SCANCODE_S] };
+			int8_t xDirection{ pKeyboardState[SDL_SCANCODE_D] - pKeyboardState[SDL_SCANCODE_A] };
+			int8_t yDirection{ pKeyboardState[SDL_SCANCODE_E] - pKeyboardState[SDL_SCANCODE_Q] };
+
+			bool isTranslating{ xDirection != 0 || yDirection != 0 || zDirection != 0 };
+
+			Vector3 localSpaceForward = cameraToWorld.TransformVector(forward).Normalized();
+			Vector3 localSpaceRight = Vector3::Cross(up, localSpaceForward).Normalized();
+			Vector3 localSpaceUp = Vector3::Cross(localSpaceForward, localSpaceRight);
+
+			if (isTranslating)
+			{
+				origin += zDirection * localSpaceForward * translateSpeed * deltaTime;
+				origin += xDirection * localSpaceRight * translateSpeed * deltaTime;
+				origin += yDirection * localSpaceUp * translateSpeed * deltaTime;
+			}
+
+			
+			// https://wiki.libsdl.org/SDL2/SDL_GetRelativeMouseState
+
+			bool isLeftMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(1)) && !static_cast<bool>(mouseState & SDL_BUTTON(3)) };
+			bool isRightMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(3)) && !static_cast<bool>(mouseState & SDL_BUTTON(1)) };
+			bool areBothMouseButtonsPressed{ static_cast<bool>(mouseState & SDL_BUTTON(1)) && static_cast<bool>(mouseState & SDL_BUTTON(3)) };
+
+			bool isMouseMoving{ mouseX != 0.0f || mouseY != 0.0f };
+
+			bool isDraggingUp{ areBothMouseButtonsPressed && mouseY != 0.0f };
+
+			if (isLeftMousePressed && isMouseMoving)
+			{
+				// Move camera forward or backward and rotate based on mouse movement
+				origin += mouseY * forward * translateSpeed * deltaTime;
+				totalYaw += mouseX * rotateSpeed * deltaTime;
+			}
+
+			if (isRightMousePressed && isMouseMoving)
+			{
+				// rotate camera based on mouse movement
+				totalPitch += mouseY * rotateSpeed * deltaTime;
+				totalYaw += mouseX * rotateSpeed * deltaTime;
+			}
+
+			// Move camera up or down based on mouse movement
+			if (isDraggingUp)
+			{
+				origin += mouseY * localSpaceUp * translateSpeed * deltaTime;
+			}
+
+			
+			bool canRotate{(isLeftMousePressed && isMouseMoving) || (isRightMousePressed && isMouseMoving)};
+
+			if (isTranslating || canRotate)
+			{
+				CalculateCameraToWorld();
+			}
 		}
 	};
 }

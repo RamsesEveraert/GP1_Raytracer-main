@@ -42,11 +42,11 @@ void Renderer::Render(Scene* pScene) const
 		for (int py{}; py < m_Height; ++py)
 		{
 			// Calculate ray direction camera
-			float x = (2 * (px + 0.5f) * invWidth - 1) * aspectRatio * FOV;
-			float y = (1 - 2 * (py + 0.5f) * invHeight) * FOV;
-			Vector3 rayDirection = Vector3(x, y, 1).Normalized();
+			float cx = (2 * (px + 0.5f) * invWidth - 1) * aspectRatio * FOV;
+			float cy = (1 - 2 * (py + 0.5f) * invHeight) * FOV;
+			Vector3 rayDirection = Vector3(cx, cy, 1).Normalized();
 			
-			//Ray viewRay(Vector3{}, rayDirection);
+			rayDirection = camera.cameraToWorld.TransformVector(rayDirection);
 			Ray viewRay(camera.origin, rayDirection);
 
 			ColorRGB finalColor{ rayDirection.x, rayDirection.y, rayDirection.z };
