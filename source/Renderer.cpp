@@ -42,7 +42,7 @@ void Renderer::Render(Scene* pScene) const
 			// Calculate ray direction camera
 			float cx = (2 * (px + 0.5f) * invWidth - 1) * aspectRatio * camera.fov;
 			float cy = (1 - 2 * (py + 0.5f) * invHeight) * camera.fov;
-			Vector3 rayDirection = Vector3(cx, cy, 1).Normalized();
+			Vector3 rayDirection = Vector3(cx, cy, 1); // Normalized();
 			
 			rayDirection = camera.cameraToWorld.TransformVector(rayDirection);
 			Ray viewRay(camera.origin, rayDirection);
@@ -61,7 +61,7 @@ void Renderer::Render(Scene* pScene) const
 				for (auto& light : lights)
 				{
 					const Vector3 lightRayDirection{ light.origin - closestHit.origin };
-					const Vector3 lightRayOrigin{ closestHit.origin + closestHit.normal * 0.00001f };
+					const Vector3 lightRayOrigin{ closestHit.origin + closestHit.normal * 0.0001f };
 
 					Ray lightRay{ lightRayOrigin, lightRayDirection.Normalized() };
 					lightRay.max = lightRayDirection.Magnitude();
