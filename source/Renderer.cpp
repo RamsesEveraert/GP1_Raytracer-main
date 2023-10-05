@@ -93,12 +93,7 @@ bool Renderer::SaveBufferToImage() const
 	return SDL_SaveBMP(m_pBuffer, "RayTracing_Buffer.bmp");
 }
 
-void dae::Renderer::SetShadowRendering(bool isActive)
+void dae::Renderer::ToggleShadowRendering()
 {
-	m_IsShadowsActive = isActive;
-}
-
-bool dae::Renderer::GetShadowActiveStatus() const
-{
-	return m_IsShadowsActive;
+	m_IsShadowsActive = !m_IsShadowsActive;
 }

@@ -23,8 +23,7 @@ namespace dae
 		void Render(Scene* pScene) const;
 		bool SaveBufferToImage() const;
 
-		void SetShadowRendering(bool isActive);
-		bool GetShadowActiveStatus() const;
+		void ToggleShadowRendering();
 
 	private:
 		SDL_Window* m_pWindow{};
