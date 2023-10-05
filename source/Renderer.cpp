@@ -14,7 +14,8 @@ using namespace dae;
 
 Renderer::Renderer(SDL_Window * pWindow) :
 	m_pWindow(pWindow),
-	m_pBuffer(SDL_GetWindowSurface(pWindow))
+	m_pBuffer(SDL_GetWindowSurface(pWindow)),
+	m_IsShadowsActive{false}
 {
 	//Initialize
 	SDL_GetWindowSize(pWindow, &m_Width, &m_Height);
@@ -42,7 +43,7 @@ void Renderer::Render(Scene* pScene) const
 			// Calculate ray direction camera
 			float cx = (2 * (px + 0.5f) * invWidth - 1) * aspectRatio * camera.fov;
 			float cy = (1 - 2 * (py + 0.5f) * invHeight) * camera.fov;
-			Vector3 rayDirection = Vector3(cx, cy, 1); // Normalized();
+			Vector3 rayDirection = Vector3(cx, cy, 1).Normalized();
 			
 			rayDirection = camera.cameraToWorld.TransformVector(rayDirection);
 			Ray viewRay(camera.origin, rayDirection);
@@ -54,9 +55,9 @@ void Renderer::Render(Scene* pScene) const
 			// Perform ray-object intersection tests
 			pScene->GetClosestHit(viewRay, closestHit);
 
+			// Perform shading calculations
 			if (closestHit.didHit)
 			{
-				// Perform shading calculations
 				finalColor = materials[closestHit.materialIndex]->Shade();
 				for (auto& light : lights)
 				{
@@ -66,7 +67,7 @@ void Renderer::Render(Scene* pScene) const
 					Ray lightRay{ lightRayOrigin, lightRayDirection.Normalized() };
 					lightRay.max = lightRayDirection.Magnitude();
 
-					if (pScene->DoesHit(lightRay))
+					if (pScene->DoesHit(lightRay) && m_IsShadowsActive)
 					{
 						finalColor *= 0.5f;
 					}
@@ -87,8 +88,17 @@ void Renderer::Render(Scene* pScene) const
 	//Update SDL Surface
 	SDL_UpdateWindowSurface(m_pWindow);
 }
-
 bool Renderer::SaveBufferToImage() const
 {
 	return SDL_SaveBMP(m_pBuffer, "RayTracing_Buffer.bmp");
+}
+
+void dae::Renderer::SetShadowRendering(bool isActive)
+{
+	m_IsShadowsActive = isActive;
+}
+
+bool dae::Renderer::GetShadowActiveStatus() const
+{
+	return m_IsShadowsActive;
 }

@@ -14,8 +14,8 @@ namespace dae
 		static ColorRGB Lambert(float kd, const ColorRGB& cd)
 		{
 			//todo: W3
-			assert(false && "Not Implemented Yet");
-			return {};
+
+
 		}
 
 		static ColorRGB Lambert(const ColorRGB& kd, const ColorRGB& cd)

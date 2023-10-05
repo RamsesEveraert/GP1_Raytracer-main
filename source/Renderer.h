@@ -23,6 +23,9 @@ namespace dae
 		void Render(Scene* pScene) const;
 		bool SaveBufferToImage() const;
 
+		void SetShadowRendering(bool isActive);
+		bool GetShadowActiveStatus() const;
+
 	private:
 		SDL_Window* m_pWindow{};
 
@@ -31,5 +34,6 @@ namespace dae
 
 		int m_Width{};
 		int m_Height{};
+		bool m_IsShadowsActive;
 	};
 }
