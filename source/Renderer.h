@@ -24,8 +24,21 @@ namespace dae
 		bool SaveBufferToImage() const;
 
 		void ToggleShadowRendering();
+		void CycleLightning();
 
 	private:
+
+		enum class LightingMode
+		{
+			ObservedArea, // Lambert Cosine Law
+			Radiance, // Incident Radiance
+			BRDF, // Scattering of light
+			Combined, // ObservedArea * Radiance * BRDF
+			Max
+		};
+
+		LightingMode m_CurrentLightingMode;
+
 		SDL_Window* m_pWindow{};
 
 		SDL_Surface* m_pBuffer{};

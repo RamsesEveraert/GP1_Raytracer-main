@@ -15,14 +15,14 @@ namespace dae
 		{
 			//todo: W3
 
-
+			ColorRGB perfectDiffuseReflectant{cd * kd};
+			return (perfectDiffuseReflectant / static_cast<float>(M_PI));
 		}
 
 		static ColorRGB Lambert(const ColorRGB& kd, const ColorRGB& cd)
 		{
 			//todo: W3
-			assert(false && "Not Implemented Yet");
-			return {};
+			return { kd * cd };
 		}
 
 		/**
@@ -37,8 +37,13 @@ namespace dae
 		static ColorRGB Phong(float ks, float exp, const Vector3& l, const Vector3& v, const Vector3& n)
 		{
 			//todo: W3
-			assert(false && "Not Implemented Yet");
-			return {};
+			Vector3 reflection{ Vector3::Reflect(l,n)};
+			float cos{ Vector3::Dot(reflection, v) };
+			float phong = ks * pow(cos, exp);
+
+			if (cos < 0) return ColorRGB{};
+
+			return ColorRGB(phong, phong, phong);
 		}
 
 		/**

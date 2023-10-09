@@ -85,7 +85,7 @@ namespace dae
 					hitRecord.t = t;
 					hitRecord.didHit = true;
 					hitRecord.origin = ray.origin + t * ray.direction.Normalized();
-					hitRecord.normal = (hitRecord.origin - plane.origin).Normalized();
+					hitRecord.normal = plane.normal;
 					hitRecord.materialIndex = plane.materialIndex;
 				}
 				return true;
@@ -137,15 +137,13 @@ namespace dae
 		inline Vector3 GetDirectionToLight(const Light& light, const Vector3 origin)
 		{
 			//todo W3
-			assert(false && "No Implemented Yet!");
-			return {};
+			return (light.origin - origin);
 		}
 
 		inline ColorRGB GetRadiance(const Light& light, const Vector3& target)
 		{
 			//todo W3
-			assert(false && "No Implemented Yet!");
-			return {};
+			return light.color* (light.intensity / GetDirectionToLight(light, target).SqrMagnitude());
 		}
 	}
 

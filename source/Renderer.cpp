@@ -15,7 +15,8 @@ using namespace dae;
 Renderer::Renderer(SDL_Window * pWindow) :
 	m_pWindow(pWindow),
 	m_pBuffer(SDL_GetWindowSurface(pWindow)),
-	m_IsShadowsActive{false}
+	m_IsShadowsActive{false},
+	m_CurrentLightingMode{LightingMode::Combined}
 {
 	//Initialize
 	SDL_GetWindowSize(pWindow, &m_Width, &m_Height);
@@ -56,21 +57,50 @@ void Renderer::Render(Scene* pScene) const
 			pScene->GetClosestHit(viewRay, closestHit);
 
 			// Perform shading calculations
+
+
+
+
 			if (closestHit.didHit)
 			{
-				finalColor = materials[closestHit.materialIndex]->Shade();
 				for (auto& light : lights)
 				{
-					const Vector3 lightRayDirection{ light.origin - closestHit.origin };
+					Vector3 lightRayDirection{ LightUtils::GetDirectionToLight(light, closestHit.origin)};
 					const Vector3 lightRayOrigin{ closestHit.origin + closestHit.normal * 0.0001f };
 
-					Ray lightRay{ lightRayOrigin, lightRayDirection.Normalized() };
-					lightRay.max = lightRayDirection.Magnitude();
+					const float lightRayLength{ lightRayDirection.Normalize() }; // normalized na assignment
 
-					if (pScene->DoesHit(lightRay) && m_IsShadowsActive)
+					Ray lightRay{ lightRayOrigin, lightRayDirection};
+					lightRay.max = lightRayLength;
+
+					const float lambertCosLaw{ Vector3::Dot(closestHit.normal, lightRayDirection) };
+
+					if (lambertCosLaw < 0) continue;
+					if (m_IsShadowsActive && pScene->DoesHit(lightRay))	continue;
+
+					const ColorRGB BRDFrgb{ materials[closestHit.materialIndex]->Shade(closestHit, lightRay.direction, viewRay.direction) };
+
+					switch (m_CurrentLightingMode)
 					{
-						finalColor *= 0.5f;
+					case dae::Renderer::LightingMode::ObservedArea:
+						finalColor += ColorRGB{ lambertCosLaw,lambertCosLaw,lambertCosLaw };
+						break;
+					case dae::Renderer::LightingMode::Radiance:
+						finalColor += LightUtils::GetRadiance(light, closestHit.origin);
+						break;
+					case dae::Renderer::LightingMode::BRDF:
+						finalColor += BRDFrgb;
+						break;
+					case dae::Renderer::LightingMode::Combined:
+						finalColor += LightUtils::GetRadiance(light, closestHit.origin) * BRDFrgb * lambertCosLaw;
+						break;
+					default:
+						break;
 					}
+
+					
+
+					
 				}
 			}
 
@@ -96,4 +126,12 @@ bool Renderer::SaveBufferToImage() const
 void dae::Renderer::ToggleShadowRendering()
 {
 	m_IsShadowsActive = !m_IsShadowsActive;
+}
+
+void dae::Renderer::CycleLightning()
+{
+	int cyclePhase{ static_cast<int>(m_CurrentLightingMode) };
+	cyclePhase = (cyclePhase + 1) % static_cast<int>(LightingMode::Max); // next + check in interval
+
+	m_CurrentLightingMode = static_cast<LightingMode>(cyclePhase);
 }
