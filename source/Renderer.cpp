@@ -57,28 +57,22 @@ void Renderer::Render(Scene* pScene) const
 			pScene->GetClosestHit(viewRay, closestHit);
 
 			// Perform shading calculations
-
-
-
-
 			if (closestHit.didHit)
 			{
 				for (auto& light : lights)
 				{
-					Vector3 lightRayDirection{ LightUtils::GetDirectionToLight(light, closestHit.origin)};
-					const Vector3 lightRayOrigin{ closestHit.origin + closestHit.normal * 0.0001f };
+					Vector3 lightRayDirection = LightUtils::GetDirectionToLight(light, closestHit.origin);
 
-					const float lightRayLength{ lightRayDirection.Normalize() }; // normalized na assignment
-
-					Ray lightRay{ lightRayOrigin, lightRayDirection};
-					lightRay.max = lightRayLength;
+					viewRay.max = lightRayDirection.Normalize();
+					viewRay.origin = closestHit.origin + closestHit.normal * 0.0001f;
+					viewRay.direction = lightRayDirection;
 
 					const float lambertCosLaw{ Vector3::Dot(closestHit.normal, lightRayDirection) };
 
 					if (lambertCosLaw < 0) continue;
-					if (m_IsShadowsActive && pScene->DoesHit(lightRay))	continue;
+					if (m_IsShadowsActive && pScene->DoesHit(viewRay))	continue;
 
-					const ColorRGB BRDFrgb{ materials[closestHit.materialIndex]->Shade(closestHit, lightRay.direction, viewRay.direction) };
+					const ColorRGB BRDFrgb{ materials[closestHit.materialIndex]->Shade(closestHit, lightRayDirection, viewRay.direction) };
 
 					switch (m_CurrentLightingMode)
 					{
@@ -97,9 +91,6 @@ void Renderer::Render(Scene* pScene) const
 					default:
 						break;
 					}
-
-					
-
 					
 				}
 			}

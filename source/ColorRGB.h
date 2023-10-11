@@ -60,6 +60,12 @@ namespace dae
 			return { r - c.r, g - c.g, b - c.b };
 		}
 
+		ColorRGB operator-(float s) const
+		{
+			return { r - s, g - s, b - s };
+		}
+
+
 		const ColorRGB& operator*=(const ColorRGB& c)
 		{
 			r *= c.r;
@@ -91,6 +97,11 @@ namespace dae
 		const ColorRGB& operator/(const ColorRGB& c)
 		{
 			return *this /= c;
+		}
+
+		ColorRGB operator/(const ColorRGB& other) const
+		{
+			return ColorRGB{ r / other.r, g / other.g, b / other.b };
 		}
 
 		const ColorRGB& operator*=(float s)
@@ -125,13 +136,32 @@ namespace dae
 		{
 			return *this /= s;
 		}
+
+		ColorRGB operator/(float s) const
+		{
+			return { r / s, g / s, b / s };
+		}
 		#pragma endregion
 	};
 
 	//ColorRGB (Global) Operators
+	inline ColorRGB operator+(float s, const ColorRGB& c)
+	{
+		return { s + c.r, s + c.g, s + c.b };
+	}
+	inline ColorRGB operator-(float s, const ColorRGB& c)
+	{
+		return { s - c.r, s - c.g, s - c.b };
+	}
+
 	inline ColorRGB operator*(float s, const ColorRGB& c)
 	{
-		return c * s;
+		return { s * c.r, s * c.g, s * c.b };
+	}
+
+	inline ColorRGB operator/(float s, const ColorRGB& c)
+	{
+		return { s / c.r, s / c.g, s / c.b };
 	}
 
 	namespace colors
