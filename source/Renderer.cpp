@@ -63,16 +63,18 @@ void Renderer::Render(Scene* pScene) const
 				{
 					Vector3 lightRayDirection = LightUtils::GetDirectionToLight(light, closestHit.origin);
 
-					viewRay.max = lightRayDirection.Normalize();
-					viewRay.origin = closestHit.origin + closestHit.normal * 0.0001f;
-					viewRay.direction = lightRayDirection;
+					Ray lightRay;
+
+					lightRay.max = lightRayDirection.Normalize();
+					lightRay.origin = closestHit.origin + closestHit.normal * 0.0001f;
+					lightRay.direction = lightRayDirection;
 
 					const float lambertCosLaw{ Vector3::Dot(closestHit.normal, lightRayDirection) };
 
 					if (lambertCosLaw < 0) continue;
-					if (m_IsShadowsActive && pScene->DoesHit(viewRay))	continue;
+					if (m_IsShadowsActive && pScene->DoesHit(lightRay))	continue;
 
-					const ColorRGB BRDFrgb{ materials[closestHit.materialIndex]->Shade(closestHit, lightRayDirection, viewRay.direction) };
+					const ColorRGB BRDFrgb{ materials[closestHit.materialIndex]->Shade(closestHit, lightRayDirection, -viewRay.direction) };
 
 					switch (m_CurrentLightingMode)
 					{
