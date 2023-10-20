@@ -101,13 +101,50 @@ namespace dae
 		}
 #pragma endregion
 #pragma region Triangle HitTest
-		//TRIANGLE HIT-TESTS
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			//todo W5
-			assert(false && "No Implemented Yet!");
-			return false;
+			const Vector3 edge1 = triangle.v1 - triangle.v0;
+			const Vector3 edge2 = triangle.v2 - triangle.v0;
+
+			const Vector3 perpendicularVector = Vector3::Cross(ray.direction, edge2);
+			const float determinant = Vector3::Dot(edge1, perpendicularVector);
+
+			// Check if ray is parallel to the triangle
+			if (dae::AreEqual(determinant, 0.f))
+				return false;
+
+			const float inverseDet = 1.0f / determinant;
+			const Vector3 distanceToTriangle = ray.origin - triangle.v0;
+			const float u = inverseDet * Vector3::Dot(distanceToTriangle, perpendicularVector);
+
+			if (u < 0.0f || u > 1.0f)
+				return false;
+
+			const Vector3 crossVec = Vector3::Cross(distanceToTriangle, edge1);
+			const float v = inverseDet * Vector3::Dot(ray.direction, crossVec);
+
+			if (v < 0.0f || u + v > 1.0f)
+				return false;
+
+			// intersection distance along the ray's direction
+			const float t = inverseDet * Vector3::Dot(edge2, crossVec);
+
+			// intersection is in the ray's positive direction
+			if (t <= FLT_EPSILON)
+				return false;
+
+			if (!ignoreHitRecord && t < hitRecord.t)
+			{
+				hitRecord.t = t;
+				hitRecord.didHit = true;
+				hitRecord.origin = ray.origin + t * ray.direction;
+				hitRecord.normal = triangle.normal;
+				hitRecord.materialIndex = triangle.materialIndex;
+			}
+
+			return true;
 		}
+
 
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray)
 		{

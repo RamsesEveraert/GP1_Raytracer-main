@@ -28,4 +28,9 @@ namespace dae
 	{
 		return abs(a - b) < epsilon;
 	}
+
+	inline bool AreEqual(const Vector3& v1, const Vector3& v2, float epsilon = FLT_EPSILON) {
+		return ( abs(v1.x - v2.x) < epsilon && abs(v1.y - v2.y) < epsilon && abs(v1.z - v2.z) < epsilon);
+	}
+
 }
