@@ -40,6 +40,11 @@ namespace dae {
 			GeometryUtils::HitTest_Plane(plane, ray, closestHit);
 		}
 
+		for (const TriangleMesh& triangleMesh : m_TriangleMeshGeometries)
+		{
+			GeometryUtils::HitTest_TriangleMesh(triangleMesh, ray, closestHit);
+		}
+
 		for (const Triangle& triangle : m_Triangles)
 		{
 			GeometryUtils::HitTest_Triangle(triangle, ray, closestHit);
@@ -60,6 +65,14 @@ namespace dae {
 		for (const Plane& plane : m_PlaneGeometries)
 		{
 			if (GeometryUtils::HitTest_Plane(plane, ray))
+			{
+				return true;
+			}
+		}
+
+		for (const TriangleMesh& triangleMesh : m_TriangleMeshGeometries)
+		{
+			if (GeometryUtils::HitTest_TriangleMesh(triangleMesh, ray))
 			{
 				return true;
 			}
@@ -261,22 +274,22 @@ namespace dae {
 
 		//Triangle Mesh
 		//=============
-		//pMesh = AddTriangleMesh(TriangleCullMode::NoCulling, matLambert_White);
-		//pMesh->positions = {
+		//const auto triangleMesh = AddTriangleMesh(TriangleCullMode::NoCulling, matLambert_White);
+		//triangleMesh->positions = {
 		//	{-.75f,-1.f,.0f},  //V0
 		//	{-.75f,1.f, .0f},  //V2
 		//	{.75f,1.f,1.f},    //V3
 		//	{.75f,-1.f,0.f} }; //V4
 
-		//pMesh->indices = {
+		//triangleMesh->indices = {
 		//	0,1,2, //Triangle 1
 		//	0,2,3  //Triangle 2
 		//};
 
-		//pMesh->CalculateNormals();
+		//triangleMesh->CalculateNormals();
 
-		//pMesh->Translate({ 0.f,1.5f,0.f });
-		//pMesh->UpdateTransforms();
+		//triangleMesh->Translate({ 0.f,1.5f,0.f });
+		//triangleMesh->UpdateTransforms();
 
 		////OBJ
 		////===

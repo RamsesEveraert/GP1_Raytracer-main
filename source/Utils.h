@@ -106,16 +106,30 @@ namespace dae
 			const Vector3 edge1 = triangle.v1 - triangle.v0;
 			const Vector3 edge2 = triangle.v2 - triangle.v0;
 
-			const Vector3 perpendicularVector = Vector3::Cross(ray.direction, edge2);
-			const float determinant = Vector3::Dot(edge1, perpendicularVector);
+			const Vector3 crossEdge2RayDirection = Vector3::Cross(ray.direction, edge2);
+			const float determinant = Vector3::Dot(edge1, crossEdge2RayDirection);
 
-			// Check if ray is parallel to the triangle
-			if (dae::AreEqual(determinant, 0.f))
+			// Normal VS Ray-Direction Check and Cull Mode Check
+			bool isShadowRay = ignoreHitRecord;
+
+			if (triangle.cullMode == TriangleCullMode::FrontFaceCulling)
+			{
+				if (isShadowRay && determinant > 0) return false; // Cull front face for shadow rays
+				if (!isShadowRay && determinant <= 0) return false; // Cull back face for non-shadow rays
+			}
+			else if (triangle.cullMode == TriangleCullMode::BackFaceCulling)
+			{
+				if (isShadowRay && determinant <= 0) return false; // Cull back face for shadow rays
+				if (!isShadowRay && determinant > 0) return false; // Cull front face for non-shadow rays
+			}
+			else if (dae::AreEqual(determinant, 0.f)) // Check if ray is parallel to the triangle
+			{
 				return false;
+			}
 
 			const float inverseDet = 1.0f / determinant;
 			const Vector3 distanceToTriangle = ray.origin - triangle.v0;
-			const float u = inverseDet * Vector3::Dot(distanceToTriangle, perpendicularVector);
+			const float u = inverseDet * Vector3::Dot(distanceToTriangle, crossEdge2RayDirection);
 
 			if (u < 0.0f || u > 1.0f)
 				return false;
@@ -124,27 +138,35 @@ namespace dae
 			const float v = inverseDet * Vector3::Dot(ray.direction, crossVec);
 
 			if (v < 0.0f || u + v > 1.0f)
+			{
 				return false;
+			}				
 
 			// intersection distance along the ray's direction
 			const float t = inverseDet * Vector3::Dot(edge2, crossVec);
 
 			// intersection is in the ray's positive direction
 			if (t <= FLT_EPSILON)
-				return false;
-
-			if (!ignoreHitRecord && t < hitRecord.t)
 			{
-				hitRecord.t = t;
-				hitRecord.didHit = true;
-				hitRecord.origin = ray.origin + t * ray.direction;
-				hitRecord.normal = triangle.normal;
-				hitRecord.materialIndex = triangle.materialIndex;
+				return false;
 			}
 
-			return true;
-		}
+			if (ray.min <= t && t <= ray.max && t < hitRecord.t)
+			{
+				if (!ignoreHitRecord)
+				{
+					hitRecord.t = t;
+					hitRecord.didHit = true;
+					hitRecord.origin = ray.origin + t * ray.direction;
+					hitRecord.normal = triangle.normal;
+					hitRecord.materialIndex = triangle.materialIndex;
+				}
+				return true;
+			}
 
+			return false;
+			
+		}
 
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray)
 		{
@@ -155,10 +177,34 @@ namespace dae
 #pragma region TriangeMesh HitTest
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			//todo W5
-			assert(false && "No Implemented Yet!");
-			return false;
+			bool didIntersect = false;
+			size_t numIndices = mesh.indices.size();
+
+			// check if every triangle has 3 vertices
+			if (numIndices % 3 != 0)
+			{
+				assert(false && "Invalid number of indices in the triangle mesh!");
+				return false;
+			}
+
+			for (size_t i = 0; i < numIndices; i += 3)
+			{
+				Triangle triangle;
+				triangle.v0 = mesh.transformedPositions[mesh.indices[i]];
+				triangle.v1 = mesh.transformedPositions[mesh.indices[i + 1]];
+				triangle.v2 = mesh.transformedPositions[mesh.indices[i + 2]];
+				triangle.normal = mesh.transformedNormals[i / 3]; 
+				triangle.materialIndex = mesh.materialIndex;
+
+				if (HitTest_Triangle(triangle, ray, hitRecord, ignoreHitRecord))
+				{
+					didIntersect = true;
+				}
+			}
+
+			return didIntersect;
 		}
+
 
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray)
 		{

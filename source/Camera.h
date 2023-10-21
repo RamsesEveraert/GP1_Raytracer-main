@@ -32,7 +32,7 @@ namespace dae
 		float totalYaw{0.f};
 
 		Matrix cameraToWorld{};
-		float fov;
+		float fov{};
 
 		void SetFOV(float fovAngle)
 		{
