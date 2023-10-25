@@ -101,72 +101,69 @@ namespace dae
 		}
 #pragma endregion
 #pragma region Triangle HitTest
+
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			const Vector3 edge1 = triangle.v1 - triangle.v0;
-			const Vector3 edge2 = triangle.v2 - triangle.v0;
+			// Compute the two edge vectors of the triangle from its vertices
+			Vector3 e1 = triangle.v1 - triangle.v0;
+			Vector3 e2 = triangle.v2 - triangle.v0;
 
-			const Vector3 crossEdge2RayDirection = Vector3::Cross(ray.direction, edge2);
-			const float determinant = Vector3::Dot(edge1, crossEdge2RayDirection);
+			// Compute the vector perpendicular to ray direction and edge e2 using left-hand rule cross product
+			Vector3 h = Vector3::Cross(e2, ray.direction);
 
-			// Normal VS Ray-Direction Check and Cull Mode Check
-			bool isShadowRay = ignoreHitRecord;
+			// Calculate the dot product of edge e1 and vector h (related to orientation of triangle to the ray)
+			float a = Vector3::Dot(e1, h);
 
-			if (triangle.cullMode == TriangleCullMode::FrontFaceCulling)
-			{
-				if (isShadowRay && determinant > 0) return false; // Cull front face for shadow rays
-				if (!isShadowRay && determinant <= 0) return false; // Cull back face for non-shadow rays
-			}
-			else if (triangle.cullMode == TriangleCullMode::BackFaceCulling)
-			{
-				if (isShadowRay && determinant <= 0) return false; // Cull back face for shadow rays
-				if (!isShadowRay && determinant > 0) return false; // Cull front face for non-shadow rays
-			}
-			else if (dae::AreEqual(determinant, 0.f)) // Check if ray is parallel to the triangle
-			{
-				return false;
-			}
+			// If triangle is nearly orthogonal to ray direction, exit early (i.e., ray is parallel to triangle)
+			if (dae::AreEqual(a, 0.f)) return false;
 
-			const float inverseDet = 1.0f / determinant;
-			const Vector3 distanceToTriangle = ray.origin - triangle.v0;
-			const float u = inverseDet * Vector3::Dot(distanceToTriangle, crossEdge2RayDirection);
+			// Compute the reciprocal of a to multiply instead of dividing multiple times
+			float inv_a = 1.0f / a;
 
-			if (u < 0.0f || u > 1.0f)
-				return false;
+			// Front-face culling: if triangle's normal faces the ray and culling mode is set, return no intersection
+			if (triangle.cullMode == TriangleCullMode::FrontFaceCulling && a > 0.0f) return false;
 
-			const Vector3 crossVec = Vector3::Cross(distanceToTriangle, edge1);
-			const float v = inverseDet * Vector3::Dot(ray.direction, crossVec);
+			// Back-face culling: if triangle's normal faces away from the ray and culling mode is set, return no intersection
+			if (triangle.cullMode == TriangleCullMode::BackFaceCulling && a < 0.0f) return false;
 
-			if (v < 0.0f || u + v > 1.0f)
-			{
-				return false;
-			}				
+			// Compute the vector from the first vertex of the triangle to the ray origin
+			Vector3 s = ray.origin - triangle.v0;
 
-			// intersection distance along the ray's direction
-			const float t = inverseDet * Vector3::Dot(edge2, crossVec);
+			// Compute the barycentric coordinate u using dot product
+			float u = Vector3::Dot(s, h) * inv_a;
 
-			// intersection is in the ray's positive direction
-			if (t <= FLT_EPSILON)
-			{
-				return false;
-			}
+			// If u is out of bounds, return no intersection
+			if (u < 0.0f || u > 1.0f) return false;
 
-			if (ray.min <= t && t <= ray.max && t < hitRecord.t)
-			{
-				if (!ignoreHitRecord)
-				{
-					hitRecord.t = t;
-					hitRecord.didHit = true;
-					hitRecord.origin = ray.origin + t * ray.direction;
-					hitRecord.normal = triangle.normal;
-					hitRecord.materialIndex = triangle.materialIndex;
-				}
-				return true;
+			// Compute the cross product of edge e1 and vector s
+			Vector3 q = Vector3::Cross(e1, s);
+
+			// Compute the barycentric coordinate v using dot product
+			float v = Vector3::Dot(ray.direction, q) * inv_a;
+
+			// If v is out of bounds or if u + v exceeds 1, return no intersection
+			if (v < 0.0f || u + v > 1.0f) return false;
+
+			// Compute the ray parameter t at which the ray intersects the triangle
+			float t = Vector3::Dot(e2, q) * inv_a;
+
+			// If t is out of the ray's valid interval or a further intersection has already been recorded, return no intersection
+			if (t < ray.min || t > ray.max || t >= hitRecord.t) return false;
+
+			// If intersections are not to be ignored, record the intersection details
+			if (!ignoreHitRecord) {
+				hitRecord.t = t;  // Distance from ray origin to intersection
+				hitRecord.didHit = true; 
+				hitRecord.origin = ray.origin + t * ray.direction; // Intersection point
+				hitRecord.normal = triangle.normal;  // Set the normal from the triangle
+				hitRecord.materialIndex = triangle.materialIndex;  // Set the material index from the triangle
 			}
 
-			return false;
-			
+			return true; 
 		}
+
+
+
 
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray)
 		{
