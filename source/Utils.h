@@ -104,47 +104,68 @@ namespace dae
 
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			// Compute the two edge vectors of the triangle from its vertices
+
+			// Get two edges of triangle
 			Vector3 e1 = triangle.v1 - triangle.v0;
 			Vector3 e2 = triangle.v2 - triangle.v0;
 
-			// Compute the vector perpendicular to ray direction and edge e2 using left-hand rule cross product
+			// Get the vector perpendicular to ray direction and edge e2 L.H cross
 			Vector3 h = Vector3::Cross(e2, ray.direction);
 
-			// Calculate the dot product of edge e1 and vector h (related to orientation of triangle to the ray)
+			// Calculate the dot product of edge e1 and vector h
 			float a = Vector3::Dot(e1, h);
 
-			// If triangle is nearly orthogonal to ray direction, exit early (i.e., ray is parallel to triangle)
+			// If triangle is parallel return
 			if (dae::AreEqual(a, 0.f)) return false;
 
-			// Compute the reciprocal of a to multiply instead of dividing multiple times
 			float inv_a = 1.0f / a;
 
+			auto cullMode = triangle.cullMode;
+
+			// When computing shadows
+			if (ignoreHitRecord)
+			{
+				// We flip the culling mode to ensure that rays meant for shadow checks will consider
+				// intersections with both the front and back faces of the triangles.
+				switch (cullMode)
+				{
+				case TriangleCullMode::FrontFaceCulling:
+					// If originally front-face culling, switch to back-face culling for shadow rays
+					cullMode = TriangleCullMode::BackFaceCulling;
+					break;
+
+				case TriangleCullMode::BackFaceCulling:
+					// If originally back-face culling, switch to front-face culling for shadow rays
+					cullMode = TriangleCullMode::FrontFaceCulling;
+					break;
+				}
+			}
+
 			// Front-face culling: if triangle's normal faces the ray and culling mode is set, return no intersection
-			if (triangle.cullMode == TriangleCullMode::FrontFaceCulling && a > 0.0f) return false;
+			if (cullMode == TriangleCullMode::FrontFaceCulling && a < 0.0f) return false;
 
 			// Back-face culling: if triangle's normal faces away from the ray and culling mode is set, return no intersection
-			if (triangle.cullMode == TriangleCullMode::BackFaceCulling && a < 0.0f) return false;
+			if (cullMode == TriangleCullMode::BackFaceCulling && a > 0.0f) return false;
 
-			// Compute the vector from the first vertex of the triangle to the ray origin
+			// Get the vector from the first vertex of the triangle to the ray origin
 			Vector3 s = ray.origin - triangle.v0;
 
-			// Compute the barycentric coordinate u using dot product
+			// Get the barycentric coordinate u using dot product
 			float u = Vector3::Dot(s, h) * inv_a;
 
 			// If u is out of bounds, return no intersection
 			if (u < 0.0f || u > 1.0f) return false;
 
-			// Compute the cross product of edge e1 and vector s
+			// get the cross product of edge e1 and vector s
 			Vector3 q = Vector3::Cross(e1, s);
 
-			// Compute the barycentric coordinate v using dot product
+			// Get the barycentric coordinate v using dot product
 			float v = Vector3::Dot(ray.direction, q) * inv_a;
 
 			// If v is out of bounds or if u + v exceeds 1, return no intersection
 			if (v < 0.0f || u + v > 1.0f) return false;
 
-			// Compute the ray parameter t at which the ray intersects the triangle
+			// Get the ray parameter t at which the ray intersects the triangle
 			float t = Vector3::Dot(e2, q) * inv_a;
 
 			// If t is out of the ray's valid interval or a further intersection has already been recorded, return no intersection
@@ -162,9 +183,6 @@ namespace dae
 			return true; 
 		}
 
-
-
-
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray)
 		{
 			HitRecord temp{};
@@ -174,24 +192,23 @@ namespace dae
 #pragma region TriangeMesh HitTest
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
+
 			bool didIntersect = false;
-			size_t numIndices = mesh.indices.size();
 
-			// check if every triangle has 3 vertices
-			if (numIndices % 3 != 0)
+			for (size_t i = 0; i < mesh.indices.size() / 3; ++i)
 			{
-				assert(false && "Invalid number of indices in the triangle mesh!");
-				return false;
-			}
+				size_t offset = i * 3;
 
-			for (size_t i = 0; i < numIndices; i += 3)
-			{
-				Triangle triangle;
-				triangle.v0 = mesh.transformedPositions[mesh.indices[i]];
-				triangle.v1 = mesh.transformedPositions[mesh.indices[i + 1]];
-				triangle.v2 = mesh.transformedPositions[mesh.indices[i + 2]];
-				triangle.normal = mesh.transformedNormals[i / 3]; 
+				Triangle triangle
+				{
+					mesh.transformedPositions[mesh.indices[offset]],
+					mesh.transformedPositions[mesh.indices[offset + 1]],
+					mesh.transformedPositions[mesh.indices[offset + 2]]
+				};
+
 				triangle.materialIndex = mesh.materialIndex;
+				triangle.normal = mesh.transformedNormals[i];
+				triangle.cullMode = mesh.cullMode;
 
 				if (HitTest_Triangle(triangle, ray, hitRecord, ignoreHitRecord))
 				{

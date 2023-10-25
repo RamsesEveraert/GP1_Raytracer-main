@@ -106,15 +106,15 @@ namespace dae
 		{
 			int startIndex = static_cast<int>(positions.size());
 
-			positions.push_back(triangle.v0);
-			positions.push_back(triangle.v1);
-			positions.push_back(triangle.v2);
+			positions.emplace_back(triangle.v0);
+			positions.emplace_back(triangle.v1);
+			positions.emplace_back(triangle.v2);
 
-			indices.push_back(startIndex);
-			indices.push_back(++startIndex);
-			indices.push_back(++startIndex);
+			indices.emplace_back(startIndex);
+			indices.emplace_back(++startIndex);
+			indices.emplace_back(++startIndex);
 
-			normals.push_back(triangle.normal);
+			normals.emplace_back(triangle.normal);
 
 			//Not ideal, but making sure all vertices are updated
 			if(!ignoreTransformUpdate)
@@ -123,20 +123,46 @@ namespace dae
 
 		void CalculateNormals()
 		{
-			
+			normals.clear(); // Clear any existing normals
+
+			// Ensure indices are a multiple of 3 (forming triangles)
+			if (indices.size() % 3 != 0)
+				return; 
+
+			normals.reserve(indices.size() / 3);
+
+			for (size_t i = 0; i < indices.size(); i += 3)
+			{
+				// Get vertices of the triangle
+				Vector3 v0 = positions[indices[i]];
+				Vector3 v1 = positions[indices[i + 1]];
+				Vector3 v2 = positions[indices[i + 2]];
+
+				// Compute normal and normalize
+				normals.emplace_back(Vector3::Cross(v1 - v0, v2 - v0).Normalized());
+			}
+
 		}
 
 		void UpdateTransforms()
 		{
-			assert(false && "No Implemented Yet!");
-			//Calculate Final Transform 
-			//const auto finalTransform = ...
+			Matrix transform = scaleTransform * rotationTransform * translationTransform;
 
-			//Transform Positions (positions > transformedPositions)
-			//...
+			transformedPositions.clear();
+			transformedPositions.reserve(positions.size());
 
-			//Transform Normals (normals > transformedNormals)
-			//...
+			for (const Vector3& position : positions)
+			{
+				transformedPositions.emplace_back(transform.TransformPoint(position));
+			}
+
+			transformedNormals.clear();
+			transformedNormals.reserve(normals.size());
+
+			for (const Vector3& normal : normals)
+			{
+				transformedNormals.emplace_back(transform.TransformVector(normal));
+			}
 		}
 	};
 #pragma endregion
