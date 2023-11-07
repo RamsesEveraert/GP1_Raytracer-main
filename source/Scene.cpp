@@ -332,20 +332,20 @@ namespace dae {
 		//CW Winding Order!
 		const Triangle baseTriangle = { Vector3(-.75f, 1.5f, 0.f), Vector3(.75f, 0.f, 0.f), Vector3(-.75f, 0.f, 0.f) };
 
-		m_Meshes[0] = AddTriangleMesh(TriangleCullMode::BackFaceCulling, matLambert_White);
-		m_Meshes[0]->AppendTriangle(baseTriangle, true);
-		m_Meshes[0]->Translate({ -1.75f,4.5f,0.f });
-		m_Meshes[0]->UpdateTransforms();
+		m_pMeshes[0] = AddTriangleMesh(TriangleCullMode::BackFaceCulling, matLambert_White);
+		m_pMeshes[0]->AppendTriangle(baseTriangle, true);
+		m_pMeshes[0]->Translate({ -1.75f,4.5f,0.f });
+		m_pMeshes[0]->UpdateTransforms();
 
-		m_Meshes[1] = AddTriangleMesh(TriangleCullMode::FrontFaceCulling, matLambert_White);
-		m_Meshes[1]->AppendTriangle(baseTriangle, true);
-		m_Meshes[1]->Translate({ 0.f,4.5f,0.f });
-		m_Meshes[1]->UpdateTransforms();
+		m_pMeshes[1] = AddTriangleMesh(TriangleCullMode::FrontFaceCulling, matLambert_White);
+		m_pMeshes[1]->AppendTriangle(baseTriangle, true);
+		m_pMeshes[1]->Translate({ 0.f,4.5f,0.f });
+		m_pMeshes[1]->UpdateTransforms();
 
-		m_Meshes[2] = AddTriangleMesh(TriangleCullMode::NoCulling, matLambert_White);
-		m_Meshes[2]->AppendTriangle(baseTriangle, true);
-		m_Meshes[2]->Translate({ 1.75f,4.5f,0.f });
-		m_Meshes[2]->UpdateTransforms();
+		m_pMeshes[2] = AddTriangleMesh(TriangleCullMode::NoCulling, matLambert_White);
+		m_pMeshes[2]->AppendTriangle(baseTriangle, true);
+		m_pMeshes[2]->Translate({ 1.75f,4.5f,0.f });
+		m_pMeshes[2]->UpdateTransforms();
 
 		AddPointLight(Vector3{ 0.f, 5.f, 5.f }, 50.f, ColorRGB{ 1.f, .61f, .45f }); //Backlight
 		AddPointLight(Vector3{ -2.5f, 5.f, -5.f }, 70.f, ColorRGB{ 1.f, .8f, .45f }); //Front Light Left
@@ -357,7 +357,7 @@ namespace dae {
 		Scene::Update(pTimer);
 		const auto yawAngle{(cos(pTimer->GetTotal()) + 1.f ) / 2.f * PI_2};
 
-		for (const auto& m : m_Meshes)
+		for (const auto& m : m_pMeshes)
 		{
 			m->RotateY(yawAngle);
 			m->UpdateTransforms();
@@ -390,11 +390,25 @@ namespace dae {
 		AddPointLight(Vector3{ -2.5f, 5.f, -5.f }, 70.f, ColorRGB{ 1.f, .8f, .45f }); //Front Light Left
 		AddPointLight(Vector3{ 2.5f, 2.5f, -5.f }, 50.f, ColorRGB{ .34f, .47f, .68f });
 
-		auto pMesh = AddTriangleMesh(TriangleCullMode::BackFaceCulling, matLambert_White);
-		Utils::ParseOBJ("Resources/lowpoly_bunny2.obj", pMesh->positions, pMesh->normals, pMesh->indices);
+		m_pMesh = AddTriangleMesh(TriangleCullMode::BackFaceCulling, matLambert_White);
+		Utils::ParseOBJ("Resources/lowpoly_bunny2.obj", 
+			m_pMesh->positions, 
+			m_pMesh->normals, 
+			m_pMesh->indices);
 
-		pMesh->Scale({ 2.0f, 2.0f, 2.0f });
-		pMesh->UpdateTransforms();
+		m_pMesh->Scale({ 2.0f, 2.0f, 2.0f });
+		m_pMesh->UpdateAABB();
+		m_pMesh->UpdateTransforms();
+	}
+	void Scene_W4_BunnyScene::Update(Timer* pTimer)
+	{
+		Scene::Update(pTimer);
+		const auto yawAngle{ (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2 };
+
+		
+		m_pMesh->RotateY(yawAngle);
+		m_pMesh->UpdateTransforms();
+
 	}
 #pragma endregion
 

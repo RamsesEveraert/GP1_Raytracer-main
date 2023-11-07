@@ -143,7 +143,7 @@ namespace dae
 		void Update(Timer* pTimer) override;
 
 	private:
-		TriangleMesh* m_Meshes[3]{};
+		TriangleMesh* m_pMeshes[3]{};
 	};
 
 	//WEEK 4 Bunny Scene
@@ -159,5 +159,9 @@ namespace dae
 		Scene_W4_BunnyScene& operator=(Scene_W4_BunnyScene&&) noexcept = delete;
 
 		void Initialize() override;
+		void Update(Timer* pTimer) override;
+
+	private:
+		TriangleMesh* m_pMesh;
 	};
 }
