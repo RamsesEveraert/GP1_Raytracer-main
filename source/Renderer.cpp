@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <execution>
+#include <ranges>
 
 #define PARALLEL_EXECUTION
 
@@ -20,53 +21,46 @@ using namespace dae;
 Renderer::Renderer(SDL_Window * pWindow) :
 	m_pWindow(pWindow),
 	m_pBuffer(SDL_GetWindowSurface(pWindow)),
-	m_IsShadowsActive{false},
+	m_IsShadowsActive{true},
 	m_CurrentLightingMode{LightingMode::Combined}
 {
 	//Initialize
 	SDL_GetWindowSize(pWindow, &m_Width, &m_Height);
 	m_pBufferPixels = static_cast<uint32_t*>(m_pBuffer->pixels);
+
+	// Window data
+	m_InvWidth =  1.0f / m_Width ;
+	m_InvHeight =  1.0f / m_Height ;
+	m_AspectRatio = static_cast<float>(m_Width) * m_InvHeight;
+
 }
 
 void Renderer::Render(Scene* pScene) const
 {
 	Camera& camera = pScene->GetCamera();
 	const Matrix cameraToWorld = camera.CalculateCameraToWorld();
-		
-	// window ratio
-
-	const float aspectRatio{ static_cast<float>(m_Width) / static_cast<float>(m_Height) };
-	const float fov = camera.fov;
-	const float invWidth{ 1.0f / m_Width };
-	const float invHeight{ 1.0f / m_Height };
-
-	//Render pixel executions
-	
-#ifdef PARALLEL_EXECUTION
-	// parallel logic
 	uint32_t amountOfPixels{ static_cast<uint32_t>(m_Width * m_Height) };
-	std::vector<uint32_t>pixelIndices{};
 
-	pixelIndices.reserve(amountOfPixels);
+	const float fov = camera.fov;
 
-	for (uint32_t index{}; index < amountOfPixels; ++index) pixelIndices.emplace_back(index);
+	//Render pixel executions	
+
+#ifdef PARALLEL_EXECUTION
+	// parallel logic	
+	auto pixelIndices = std::views::iota(0u, amountOfPixels); //https://en.cppreference.com/w/cpp/ranges/iota_view
 
 	std::for_each(std::execution::par, pixelIndices.begin(), pixelIndices.end(), [&](int i) 
 	{
-		RenderPixel(pScene, i, fov, aspectRatio, cameraToWorld, camera.origin);
+		RenderPixel(pScene, i, fov, m_AspectRatio, cameraToWorld, camera.origin);
 	});
 #else
 	// synchronous logic
-	uint32_t amountOfPixels{ static_cast<uint32_t>(m_Width * m_Height) };
 	for (uint32_t pixelIndex{}; pixelIndex < amountOfPixels; ++pixelIndex)
 	{
-		RenderPixel(pScene, pixelIndex, fov, aspectRatio, cameraToWorld, camera.origin);
+		RenderPixel(pScene, pixelIndex, fov, m_AspectRatio, cameraToWorld, camera.origin);
 	}
 
 #endif
-
-	//@END
-	//Update SDL Surface
 	SDL_UpdateWindowSurface(m_pWindow);
 }
 void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, float fov, float aspectratio, const Matrix& cameraToWorld, const Vector3& cameraOrigin) const
@@ -74,11 +68,11 @@ void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, float fov, f
 	auto materials{ pScene->GetMaterials() };
 	auto& lights = pScene->GetLights();
 
-	const uint32_t px{ pixelIndex % m_Width }, py{ pixelIndex / m_Width };
+	const uint32_t px{ pixelIndex % m_Width }, py{ static_cast<uint32_t>(pixelIndex * m_InvWidth) };
 
 	float rx{ px + 0.5f }, ry{ py + 0.5f };
-	float cx{ (2 * (rx / static_cast<float>(m_Width)) - 1) * aspectratio * fov };
-	float cy{(1-(2*(ry/static_cast<float>(m_Height)))) * fov};
+	float cx{ (2 * (rx * m_InvWidth) - 1) * aspectratio * fov };
+	float cy{(1-(2*(ry * m_InvHeight))) * fov};
 
 	Vector3 rayDirection = Vector3(cx, cy, 1).Normalized();
 

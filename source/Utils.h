@@ -10,6 +10,7 @@ namespace dae
 	{
 #pragma region Sphere HitTest
 		//SPHERE HIT-TESTS
+
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
 			//TODO w1
@@ -21,52 +22,36 @@ namespace dae
 
 			float discriminant = b * b - 4 * a * c;  // Discriminant
 
+			if (discriminant <= 0.0f) return false;
 
-			if (discriminant >= 0)
+			float sqrtDiscriminant = sqrtf(discriminant);
+			float inv2a = 1.0f / (2 * a);
+
+			float t = (-b - sqrtDiscriminant) * inv2a;
+
+			if (t < ray.min || t > ray.max)
 			{
-				float sqrtDiscriminant = sqrtf(discriminant);
+				t = (-b + sqrtDiscriminant) * inv2a;
 
-				// Calculate both intersection points
-				float t1 = (-b - sqrtDiscriminant) / (2 * a);
-
-				if (t1 >= ray.min && t1 <= ray.max)
-				{
-
-					if (!ignoreHitRecord && t1 < hitRecord.t)
-					{
-						hitRecord.t = t1;
-						hitRecord.didHit = true;
-						hitRecord.origin = ray.origin + t1 * ray.direction;
-						hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
-						hitRecord.materialIndex = sphere.materialIndex;
-					}
-
-					return true;
-				}
-				float t2 = (-b + sqrtDiscriminant) / (2 * a);
-				if (t2 >= ray.min && t2 <= ray.max)
-				{
-					if (!ignoreHitRecord && t2 < hitRecord.t)
-					{
-						hitRecord.t = t2;
-						hitRecord.didHit = true;
-						hitRecord.origin = ray.origin + t2 * ray.direction;
-						hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
-						hitRecord.materialIndex = sphere.materialIndex;
-					}
-
-					return true;
-				}
-				
+				if (t < ray.min || t > ray.max)	return false;
 			}
 
-			return false;
+			if (!ignoreHitRecord && t < hitRecord.t)
+			{
+				hitRecord.didHit = true;
+				hitRecord.materialIndex = sphere.materialIndex;
+				hitRecord.origin = ray.origin + ray.direction * t;
+				hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
+				hitRecord.t = t;
+			}
+
+			return true;
 		
 		}
 
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray)
 		{
-			HitRecord temp{};
+			static HitRecord temp{};
 			return HitTest_Sphere(sphere, ray, temp, true);
 		}
 #pragma endregion
@@ -190,41 +175,69 @@ namespace dae
 		}
 #pragma endregion
 #pragma region TriangeMesh HitTest
+		inline bool SlabTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray)
+		{
+			float tx1 = (mesh.transformedMinAABB.x - ray.origin.x) / ray.direction.x;
+			float tx2 = (mesh.transformedMaxAABB.x - ray.origin.x) / ray.direction.x;
+
+			float tmin = std::min(tx1, tx2);
+			float tmax = std::max(tx1, tx2);
+
+			float ty1 = (mesh.transformedMinAABB.y - ray.origin.y) / ray.direction.y;
+			float ty2 = (mesh.transformedMaxAABB.y - ray.origin.y) / ray.direction.y;
+
+			tmin = std::max(tmin, std::min(ty1, ty2));
+			tmax = std::min(tmax, std::max(ty1, ty2));
+
+			float tz1 = (mesh.transformedMinAABB.z - ray.origin.z) / ray.direction.z;
+			float tz2 = (mesh.transformedMaxAABB.z - ray.origin.z) / ray.direction.z;
+
+			tmin = std::max(tmin, std::min(tz1, tz2));
+			tmax = std::min(tmax, std::max(tz1, tz2));
+
+			return tmax > 0 && tmax >= tmin;
+		}
+
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
+			if (!SlabTest_TriangleMesh(mesh, ray))
+			{
+				return false;
+			}
 
-			bool didIntersect = false;
+			size_t triangleCount = mesh.indices.size() / 3;
 
-			for (size_t i = 0; i < mesh.indices.size() / 3; ++i)
+			bool didHit = false;
+
+			for (size_t i = 0; i < triangleCount; ++i)
 			{
 				size_t offset = i * 3;
 
-				Triangle triangle
-				{
+				Triangle triangle{
 					mesh.transformedPositions[mesh.indices[offset]],
 					mesh.transformedPositions[mesh.indices[offset + 1]],
-					mesh.transformedPositions[mesh.indices[offset + 2]]
+					mesh.transformedPositions[mesh.indices[offset + 2]],
+					mesh.transformedNormals[i]
 				};
 
 				triangle.materialIndex = mesh.materialIndex;
-				triangle.normal = mesh.transformedNormals[i];
 				triangle.cullMode = mesh.cullMode;
 
 				if (HitTest_Triangle(triangle, ray, hitRecord, ignoreHitRecord))
 				{
-					didIntersect = true;
+					didHit = true;
 				}
 			}
 
-			return didIntersect;
+			return didHit;
 		}
-
 
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray)
 		{
-			HitRecord temp{};
+			static HitRecord temp{};
 			return HitTest_TriangleMesh(mesh, ray, temp, true);
 		}
+
 #pragma endregion
 	}
 

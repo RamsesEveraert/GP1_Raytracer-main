@@ -335,16 +335,19 @@ namespace dae {
 		m_pMeshes[0] = AddTriangleMesh(TriangleCullMode::BackFaceCulling, matLambert_White);
 		m_pMeshes[0]->AppendTriangle(baseTriangle, true);
 		m_pMeshes[0]->Translate({ -1.75f,4.5f,0.f });
+		m_pMeshes[0]->UpdateAABB();
 		m_pMeshes[0]->UpdateTransforms();
 
 		m_pMeshes[1] = AddTriangleMesh(TriangleCullMode::FrontFaceCulling, matLambert_White);
 		m_pMeshes[1]->AppendTriangle(baseTriangle, true);
 		m_pMeshes[1]->Translate({ 0.f,4.5f,0.f });
+		m_pMeshes[1]->UpdateAABB();
 		m_pMeshes[1]->UpdateTransforms();
 
 		m_pMeshes[2] = AddTriangleMesh(TriangleCullMode::NoCulling, matLambert_White);
 		m_pMeshes[2]->AppendTriangle(baseTriangle, true);
 		m_pMeshes[2]->Translate({ 1.75f,4.5f,0.f });
+		m_pMeshes[2]->UpdateAABB();
 		m_pMeshes[2]->UpdateTransforms();
 
 		AddPointLight(Vector3{ 0.f, 5.f, 5.f }, 50.f, ColorRGB{ 1.f, .61f, .45f }); //Backlight

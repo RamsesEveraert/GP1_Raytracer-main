@@ -50,6 +50,11 @@ namespace dae
 
 		int m_Width{};
 		int m_Height{};
+		float m_InvWidth{};
+		float m_InvHeight{};
+
+		float m_AspectRatio{};
+
 		bool m_IsShadowsActive;
 	};
 }
