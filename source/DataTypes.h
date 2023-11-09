@@ -1,8 +1,9 @@
 #pragma once
 #include <cassert>
 
-#include "Math.h"
-#include "vector"
+#include "Math.h">
+#include <vector>
+#include <array>
 
 namespace dae
 {
@@ -54,6 +55,50 @@ namespace dae
 		unsigned char materialIndex{};
 	};
 
+	struct AABB {
+		Vector3 min;
+		Vector3 max;
+
+		AABB() = default;
+		AABB(const Vector3& min, const Vector3& max) : min(min), max(max) {}
+
+		void Encapsulate(const Vector3& point) {
+			min = Vector3::Min(min, point);
+			max = Vector3::Max(max, point);
+		}
+
+		static AABB FromPoints(const std::vector<Vector3>& points) {
+			if (points.empty()) return {};
+
+			AABB aabb(points[0], points[0]);
+			for (const auto& point : points) {
+				aabb.Encapsulate(point);
+			}
+			return aabb;
+		}
+
+		AABB Transformed(const Matrix& transform) const {
+			// We transform all 8 corners of the original AABB to find the new transformed AABB.
+			std::array<Vector3, 8> corners = {
+				transform.TransformPoint(min),
+				transform.TransformPoint({min.x, min.y, max.z}),
+				transform.TransformPoint({min.x, max.y, min.z}),
+				transform.TransformPoint({min.x, max.y, max.z}),
+				transform.TransformPoint({max.x, min.y, min.z}),
+				transform.TransformPoint({max.x, min.y, max.z}),
+				transform.TransformPoint({max.x, max.y, min.z}),
+				transform.TransformPoint(max)
+			};
+
+			AABB transformedAABB = AABB(corners[0], corners[0]);
+			for (const auto& corner : corners) {
+				transformedAABB.Encapsulate(corner);
+			}
+			return transformedAABB;
+		}
+	};
+
+
 	struct TriangleMesh
 	{
 		TriangleMesh() = default;
@@ -84,11 +129,8 @@ namespace dae
 		Matrix translationTransform{};
 		Matrix scaleTransform{};
 
-		Vector3 minAABB{};
-		Vector3 maxAABB{};
-
-		Vector3 transformedMinAABB{};
-		Vector3 transformedMaxAABB{};
+		AABB aabb;
+		AABB transformedAABB;
 
 		std::vector<Vector3> transformedPositions{};
 		std::vector<Vector3> transformedNormals{};
@@ -146,78 +188,29 @@ namespace dae
 			}
 		}
 
-		void UpdateAABB()
+		void UpdateAABB() 
 		{
-			if (!positions.empty())
-			{
-				minAABB = positions[0];
-				maxAABB = positions[0];
-				for (auto& p : positions)
-				{
-					minAABB = Vector3::Min(p, minAABB);
-					maxAABB = Vector3::Max(p, maxAABB);
-				}
-			}
+			aabb = AABB::FromPoints(positions);
 		}
 
-		void UpdateTransformedAABB(const Matrix& transform)
-		{
-			Vector3 tMinAABB = transform.TransformPoint(minAABB);
-			Vector3 tMaxAABB = tMinAABB;
-
-			Vector3 tAABB = transform.TransformPoint(maxAABB.x, minAABB.y, minAABB.z);
-			tMinAABB = Vector3::Min(tAABB, tMinAABB);
-			tMaxAABB = Vector3::Max(tAABB, tMaxAABB);
-
-			tAABB = transform.TransformPoint(maxAABB.x, minAABB.y, maxAABB.z);
-			tMinAABB = Vector3::Min(tAABB, tMinAABB);
-			tMaxAABB = Vector3::Max(tAABB, tMaxAABB);
-
-			tAABB = transform.TransformPoint(minAABB.x, minAABB.y, maxAABB.z);
-			tMinAABB = Vector3::Min(tAABB, tMinAABB);
-			tMaxAABB = Vector3::Max(tAABB, tMaxAABB);
-
-			tAABB = transform.TransformPoint(minAABB.x, maxAABB.y, minAABB.z);
-			tMinAABB = Vector3::Min(tAABB, tMinAABB);
-			tMaxAABB = Vector3::Max(tAABB, tMaxAABB);
-
-			tAABB = transform.TransformPoint(maxAABB.x, maxAABB.y, minAABB.z);
-			tMinAABB = Vector3::Min(tAABB, tMinAABB);
-			tMaxAABB = Vector3::Max(tAABB, tMaxAABB);
-
-			tAABB = transform.TransformPoint(maxAABB);
-			tMinAABB = Vector3::Min(tAABB, tMinAABB);
-			tMaxAABB = Vector3::Max(tAABB, tMaxAABB);
-
-			tAABB = transform.TransformPoint(minAABB.x, maxAABB.y, maxAABB.z);
-			tMinAABB = Vector3::Min(tAABB, tMinAABB);
-			tMaxAABB = Vector3::Max(tAABB, tMaxAABB);
-
-			transformedMinAABB = tMinAABB;
-			transformedMaxAABB = tMaxAABB;
-		}
-
-		void UpdateTransforms()
+		void UpdateTransforms() 
 		{
 			Matrix transform = scaleTransform * rotationTransform * translationTransform;
 
 			transformedPositions.clear();
+			transformedNormals.clear();
 			transformedPositions.reserve(positions.size());
+			transformedNormals.reserve(normals.size());
 
-			for (const Vector3& position : positions)
-			{
+			for (const auto& position : positions) {
 				transformedPositions.push_back(transform.TransformPoint(position));
 			}
 
-			transformedNormals.clear();
-			transformedNormals.reserve(normals.size());
-
-			for (const Vector3& normal : normals)
-			{
-				transformedNormals.push_back(transform.TransformVector(normal));
+			for (const auto& normal : normals) {
+				transformedNormals.push_back(transform.TransformVector(normal).Normalized());
 			}
 
-			UpdateTransformedAABB(transform);
+			transformedAABB = aabb.Transformed(transform);
 		}
 	};
 #pragma endregion
