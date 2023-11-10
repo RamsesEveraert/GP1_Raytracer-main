@@ -110,65 +110,50 @@ namespace dae
 			// When computing shadows
 			if (ignoreHitRecord)
 			{
-				// We flip the culling mode to ensure that rays meant for shadow checks will consider
-				// intersections with both the front and back faces of the triangles.
+				//flip for shadows
 				switch (cullMode)
 				{
 				case TriangleCullMode::FrontFaceCulling:
-					// If originally front-face culling, switch to back-face culling for shadow rays
 					cullMode = TriangleCullMode::BackFaceCulling;
 					break;
 
 				case TriangleCullMode::BackFaceCulling:
-					// If originally back-face culling, switch to front-face culling for shadow rays
 					cullMode = TriangleCullMode::FrontFaceCulling;
 					break;
 				}
 			}
 
-			// Front-face culling: if triangle's normal faces the ray and culling mode is set, return no intersection
 			if (cullMode == TriangleCullMode::FrontFaceCulling && a < 0.0f) return false;
-
-			// Back-face culling: if triangle's normal faces away from the ray and culling mode is set, return no intersection
 			if (cullMode == TriangleCullMode::BackFaceCulling && a > 0.0f) return false;
 
-			// Get the vector from the first vertex of the triangle to the ray origin
 			Vector3 s = ray.origin - triangle.v0;
 
-			// Get the barycentric coordinate u using dot product
-			float u = Vector3::Dot(s, h) * inv_a;
-
-			// If u is out of bounds, return no intersection
+			// barycentric coordinate u u
+			float u = Vector3::Dot(s, h) * inv_a;			
 			if (u < 0.0f || u > 1.0f) return false;
 
-			// get the cross product of edge e1 and vector s
 			Vector3 q = Vector3::Cross(e1, s);
 
-			// Get the barycentric coordinate v using dot product
-			float v = Vector3::Dot(ray.direction, q) * inv_a;
-
-			// If v is out of bounds or if u + v exceeds 1, return no intersection
+			// barycentric coordinate v
+			float v = Vector3::Dot(ray.direction, q) * inv_a;			
 			if (v < 0.0f || u + v > 1.0f) return false;
 
-			// Get the ray parameter t at which the ray intersects the triangle
 			float t = Vector3::Dot(e2, q) * inv_a;
-
-			// If t is out of the ray's valid interval or a further intersection has already been recorded, return no intersection
 			if (t < ray.min || t > ray.max || t >= hitRecord.t) return false;
 
 			// If intersections are not to be ignored, record the intersection details
 			if (!ignoreHitRecord) {
-				hitRecord.t = t;  // Distance from ray origin to intersection
+				hitRecord.t = t;  
 				hitRecord.didHit = true; 
-				hitRecord.origin = ray.origin + t * ray.direction; // Intersection point
-				hitRecord.normal = triangle.normal;  // Set the normal from the triangle
-				hitRecord.materialIndex = triangle.materialIndex;  // Set the material index from the triangle
+				hitRecord.origin = ray.origin + t * ray.direction;
+				hitRecord.normal = triangle.normal;
+				hitRecord.materialIndex = triangle.materialIndex;
 			}
 
 			return true; 
 		}
 
-		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray)
+	inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray)
 		{
 			HitRecord temp{};
 			return HitTest_Triangle(triangle, ray, temp, true);
@@ -208,10 +193,7 @@ namespace dae
 
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			if (!SlabTest_TriangleMesh(mesh, ray))
-			{
-				return false;
-			}
+			if (!SlabTest_TriangleMesh(mesh, ray)) return false;
 
 			size_t triangleCount = mesh.indices.size() / 3;
 
@@ -220,7 +202,7 @@ namespace dae
 			for (size_t i = 0; i < triangleCount; ++i)
 			{
 				size_t offset = i * 3;
-
+				 
 				Triangle triangle{
 					mesh.transformedPositions[mesh.indices[offset]],
 					mesh.transformedPositions[mesh.indices[offset + 1]],

@@ -33,6 +33,8 @@ Renderer::Renderer(SDL_Window * pWindow) :
 	m_InvHeight =  1.0f / m_Height ;
 	m_AspectRatio = static_cast<float>(m_Width) * m_InvHeight;
 
+	// Materials
+
 }
 
 void Renderer::Render(Scene* pScene) const
