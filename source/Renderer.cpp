@@ -67,7 +67,7 @@ void Renderer::Render(Scene* pScene) const
 }
 void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, float fov, float aspectratio, const Matrix& cameraToWorld, const Vector3& cameraOrigin) const
 {
-	auto materials{ pScene->GetMaterials() };
+	auto& materials{ pScene->GetMaterials() };
 	auto& lights = pScene->GetLights();
 
 	const uint32_t px{ pixelIndex % m_Width }, py{ static_cast<uint32_t>(pixelIndex * m_InvWidth) };
