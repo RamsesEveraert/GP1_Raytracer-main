@@ -24,6 +24,7 @@ namespace dae
 		Vector3 origin{};
 		float fovAngle{90.f};
 
+		//Camera's orientation
 		Vector3 forward{Vector3::UnitZ};
 		Vector3 up{Vector3::UnitY};
 		Vector3 right{Vector3::UnitX};
@@ -55,25 +56,30 @@ namespace dae
 
 		void Update(Timer* pTimer)
 		{
-			const float deltaTime = pTimer->GetElapsed();
+			const float deltaTime{ pTimer->GetElapsed() };
 
 			//Keyboard Input
-			const uint8_t* pKeyboardState = SDL_GetKeyboardState(nullptr);
+			const uint8_t* pKeyboardState{ SDL_GetKeyboardState(nullptr) };
 
 			//Mouse Input
 			int mouseX{}, mouseY{};
-			const uint32_t mouseState = SDL_GetRelativeMouseState(&mouseX, &mouseY);
+			const uint32_t mouseState{ SDL_GetRelativeMouseState(&mouseX, &mouseY) };
 
 			bool needRecalculate{ false };
 
-			Vector3 translationDelta = HandleKeyboardInput(pKeyboardState, deltaTime, cameraToWorld, forward, up);
+			//Camera movement
+			Vector3 translationDelta{ HandleKeyboardInput(pKeyboardState, deltaTime, cameraToWorld, forward, up) };
 			if (translationDelta != Vector3{})
+			{
 				needRecalculate = true;
+			}				
 
 			HandleMouseInput(mouseX, mouseY, mouseState, totalYaw, totalPitch, origin, deltaTime, forward);
 
 			if (needRecalculate)
+			{
 				CalculateCameraToWorld();
+			}				
 
 			origin += translationDelta;
 		}
@@ -81,15 +87,17 @@ namespace dae
 		Vector3 HandleKeyboardInput(const uint8_t* pKeyboardState, float deltaTime, const Matrix& cameraToWorld, const Vector3& forward, const Vector3& up)
 		{
 			const float translateSpeed{ 10.f };
+
+			//Keyboard inputs for translation
 			int8_t zDirection{ pKeyboardState[SDL_SCANCODE_W] - pKeyboardState[SDL_SCANCODE_S] };
 			int8_t xDirection{ pKeyboardState[SDL_SCANCODE_D] - pKeyboardState[SDL_SCANCODE_A] };
 			int8_t yDirection{ pKeyboardState[SDL_SCANCODE_E] - pKeyboardState[SDL_SCANCODE_Q] };
 
 			if (xDirection || yDirection || zDirection)
 			{
-				Vector3 localSpaceForward = cameraToWorld.TransformVector(forward).Normalized();
-				Vector3 localSpaceRight = Vector3::Cross(up, localSpaceForward).Normalized();
-				Vector3 localSpaceUp = Vector3::Cross(localSpaceForward, localSpaceRight);
+				Vector3 localSpaceForward{ cameraToWorld.TransformVector(forward).Normalized() };
+				Vector3 localSpaceRight{ Vector3::Cross(up, localSpaceForward).Normalized() };
+				Vector3 localSpaceUp{ Vector3::Cross(localSpaceForward, localSpaceRight) };
 
 				Vector3 translationDelta{};
 				translationDelta += zDirection * localSpaceForward;
@@ -102,20 +110,22 @@ namespace dae
 		}
 		void HandleMouseInput(int mouseX, int mouseY, uint32_t mouseState, float& totalYaw, float& totalPitch, Vector3& origin, float deltaTime, const Vector3& forward)
 		{
-			const float rotateSpeed{ .5f };
+			const float rotateSpeed{ 0.5f };
 			const float translateSpeed{ 10.f };
 
-			bool isLeftMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(1)) && !static_cast<bool>(mouseState & SDL_BUTTON(3)) };
-			bool isRightMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(3)) && !static_cast<bool>(mouseState & SDL_BUTTON(1)) };
+			//Mouse buttons
+			bool isLeftMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(1)) && !static_cast<bool>(mouseState & SDL_BUTTON(3)) }; // prevent double mouse button click
+			bool isRightMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(3)) && !static_cast<bool>(mouseState & SDL_BUTTON(1)) }; // Prevent double mouse button click
 			bool areBothMouseButtonsPressed{ static_cast<bool>(mouseState & SDL_BUTTON(1)) && static_cast<bool>(mouseState & SDL_BUTTON(3)) };
 
-			bool isMouseMoving = mouseX != 0 || mouseY != 0;
+			bool isMouseMoving{ mouseX != 0 || mouseY != 0 };
 
 			if ((isLeftMousePressed || isRightMousePressed) && isMouseMoving)
 			{
 				if (isLeftMousePressed)
 				{
-					origin += translateSpeed * mouseY * forward * deltaTime;
+					Vector3 localSpaceForward{ cameraToWorld.TransformVector(forward).Normalized() };
+					origin += translateSpeed * -mouseY * localSpaceForward * deltaTime;
 					totalYaw += rotateSpeed * mouseX * deltaTime;
 				}
 
@@ -129,7 +139,7 @@ namespace dae
 
 			if (areBothMouseButtonsPressed && mouseY != 0)
 			{
-				Vector3 localSpaceUp = Vector3::Cross(cameraToWorld.TransformVector(forward).Normalized(), Vector3::Cross(up, cameraToWorld.TransformVector(forward)).Normalized());
+				Vector3 localSpaceUp{ Vector3::Cross(cameraToWorld.TransformVector(forward).Normalized(), Vector3::Cross(up, cameraToWorld.TransformVector(forward)).Normalized()) };
 				origin += translateSpeed * mouseY * localSpaceUp * deltaTime;
 			}
 		}
