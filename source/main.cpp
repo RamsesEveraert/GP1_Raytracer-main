@@ -82,6 +82,10 @@ int main(int argc, char* args[])
 				{
 					pRenderer->CycleLightning();
 				}
+				if (e.key.keysym.scancode == SDL_SCANCODE_F6)
+				{
+					pTimer->StartBenchmark(10);
+				}
 				break;
 			}
 		}

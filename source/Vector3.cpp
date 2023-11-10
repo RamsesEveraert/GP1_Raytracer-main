@@ -182,5 +182,16 @@ namespace dae {
 		if (index == 1) return y;
 		return z;
 	}
+
+	bool Vector3::operator!=(const Vector3& other) const
+	{
+		return x != other.x || y != other.y || z != other.z;
+	}
+
+	bool Vector3::operator==(const Vector3& other) const
+	{
+		return x == other.x && y == other.y && z == other.z;
+	}
+
 #pragma endregion
 }

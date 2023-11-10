@@ -64,36 +64,52 @@ namespace dae
 			int mouseX{}, mouseY{};
 			const uint32_t mouseState = SDL_GetRelativeMouseState(&mouseX, &mouseY);
 
-			const float translateSpeed{ 10.f };
-			const float rotateSpeed{ .5f };
+			bool needRecalculate{ false };
 
-			// Calculate movement directions based on keyboard input
+			Vector3 translationDelta = HandleKeyboardInput(pKeyboardState, deltaTime, cameraToWorld, forward, up);
+			if (translationDelta != Vector3{})
+				needRecalculate = true;
+
+			HandleMouseInput(mouseX, mouseY, mouseState, totalYaw, totalPitch, origin, deltaTime, forward);
+
+			if (needRecalculate)
+				CalculateCameraToWorld();
+
+			origin += translationDelta;
+		}
+
+		Vector3 HandleKeyboardInput(const uint8_t* pKeyboardState, float deltaTime, const Matrix& cameraToWorld, const Vector3& forward, const Vector3& up)
+		{
+			const float translateSpeed{ 10.f };
 			int8_t zDirection{ pKeyboardState[SDL_SCANCODE_W] - pKeyboardState[SDL_SCANCODE_S] };
 			int8_t xDirection{ pKeyboardState[SDL_SCANCODE_D] - pKeyboardState[SDL_SCANCODE_A] };
 			int8_t yDirection{ pKeyboardState[SDL_SCANCODE_E] - pKeyboardState[SDL_SCANCODE_Q] };
 
-			bool isTranslating{ xDirection != 0 || yDirection != 0 || zDirection != 0 };
-			bool needRecalculate{ false };  // Flag to determine if recalculation is needed
-
-			if (isTranslating)
+			if (xDirection || yDirection || zDirection)
 			{
 				Vector3 localSpaceForward = cameraToWorld.TransformVector(forward).Normalized();
 				Vector3 localSpaceRight = Vector3::Cross(up, localSpaceForward).Normalized();
 				Vector3 localSpaceUp = Vector3::Cross(localSpaceForward, localSpaceRight);
 
-				origin += zDirection * localSpaceForward * translateSpeed * deltaTime;
-				origin += xDirection * localSpaceRight * translateSpeed * deltaTime;
-				origin += yDirection * localSpaceUp * translateSpeed * deltaTime;
-				needRecalculate = true;
-			}
+				Vector3 translationDelta{};
+				translationDelta += zDirection * localSpaceForward;
+				translationDelta += xDirection * localSpaceRight;
+				translationDelta += yDirection * localSpaceUp;
 
-			//https://wiki.libsdl.org/SDL2/SDL_GetRelativeMouseState
+				return translationDelta * translateSpeed * deltaTime;
+			}
+			return Vector3{};
+		}
+		void HandleMouseInput(int mouseX, int mouseY, uint32_t mouseState, float& totalYaw, float& totalPitch, Vector3& origin, float deltaTime, const Vector3& forward)
+		{
+			const float rotateSpeed{ .5f };
+			const float translateSpeed{ 10.f };
 
 			bool isLeftMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(1)) && !static_cast<bool>(mouseState & SDL_BUTTON(3)) };
 			bool isRightMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(3)) && !static_cast<bool>(mouseState & SDL_BUTTON(1)) };
 			bool areBothMouseButtonsPressed{ static_cast<bool>(mouseState & SDL_BUTTON(1)) && static_cast<bool>(mouseState & SDL_BUTTON(3)) };
 
-			bool isMouseMoving = mouseX != 0.0f || mouseY != 0.0f;
+			bool isMouseMoving = mouseX != 0 || mouseY != 0;
 
 			if ((isLeftMousePressed || isRightMousePressed) && isMouseMoving)
 			{
@@ -106,27 +122,18 @@ namespace dae
 				if (isRightMousePressed)
 				{
 					totalPitch += rotateSpeed * mouseY * deltaTime;
-					totalYaw += rotateSpeed * mouseX * deltaTime;
+					if (!isLeftMousePressed)
+						totalYaw += rotateSpeed * mouseX * deltaTime;
 				}
-
-				needRecalculate = true;
 			}
 
-			if (areBothMouseButtonsPressed && mouseY != 0.0f)
+			if (areBothMouseButtonsPressed && mouseY != 0)
 			{
-				if (!isTranslating)  // Only calculate if not already done
-				{
-					Vector3 localSpaceUp = Vector3::Cross(cameraToWorld.TransformVector(forward).Normalized(), Vector3::Cross(up, cameraToWorld.TransformVector(forward)).Normalized());
-					origin += translateSpeed * mouseY * localSpaceUp * deltaTime;
-				}
-				needRecalculate = true;
-			}
-
-			if (needRecalculate)
-			{
-				CalculateCameraToWorld();
+				Vector3 localSpaceUp = Vector3::Cross(cameraToWorld.TransformVector(forward).Normalized(), Vector3::Cross(up, cameraToWorld.TransformVector(forward)).Normalized());
+				origin += translateSpeed * mouseY * localSpaceUp * deltaTime;
 			}
 		}
+
 
 	};
 }

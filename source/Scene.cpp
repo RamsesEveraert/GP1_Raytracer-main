@@ -358,7 +358,7 @@ namespace dae {
 	void Scene_W4_ReferenceScene::Update(Timer* pTimer)
 	{
 		Scene::Update(pTimer);
-		const auto yawAngle{(cos(pTimer->GetTotal()) + 1.f ) / 2.f * PI_2};
+		const auto yawAngle{(cos(pTimer->GetTotal()) + 1.f ) *0.5f * PI_2};
 
 		for (const auto& m : m_pMeshes)
 		{
