@@ -125,6 +125,7 @@ namespace dae
 				if (isLeftMousePressed)
 				{
 					Vector3 localSpaceForward{ cameraToWorld.TransformVector(forward).Normalized() };
+
 					origin += translateSpeed * -mouseY * localSpaceForward * deltaTime;
 					totalYaw += rotateSpeed * mouseX * deltaTime;
 				}
@@ -140,7 +141,7 @@ namespace dae
 			if (areBothMouseButtonsPressed && mouseY != 0)
 			{
 				Vector3 localSpaceUp{ Vector3::Cross(cameraToWorld.TransformVector(forward).Normalized(), Vector3::Cross(up, cameraToWorld.TransformVector(forward)).Normalized()) };
-				origin += translateSpeed * mouseY * localSpaceUp * deltaTime;
+				origin += translateSpeed * -mouseY * localSpaceUp * deltaTime;
 			}
 		}
 
