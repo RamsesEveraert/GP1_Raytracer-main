@@ -135,7 +135,7 @@ namespace dae {
 
 	unsigned char Scene::AddMaterial(Material* pMaterial)
 	{
-		m_Materials.push_back(pMaterial);
+		m_Materials.emplace_back(pMaterial);
 		return static_cast<unsigned char>(m_Materials.size() - 1);
 	}
 #pragma endregion

@@ -321,7 +321,7 @@ namespace dae
 					int k = 0;
 				}
 
-				normals.push_back(normal);
+				normals.emplace_back(normal);
 			}
 
 			return true;

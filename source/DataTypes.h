@@ -78,8 +78,8 @@ namespace dae
 		}
 
 		AABB Transformed(const Matrix& transform) const {
-			// We transform all 8 corners of the original AABB to find the new transformed AABB.
-			std::array<Vector3, 8> corners = {
+			//8 corners of AABB 
+			std::array<Vector3, 8> corners = { // https://stackoverflow.com/questions/4424579/stdvector-versus-stdarray-in-c
 				transform.TransformPoint(min),
 				transform.TransformPoint({min.x, min.y, max.z}),
 				transform.TransformPoint({min.x, max.y, min.z}),
@@ -154,15 +154,15 @@ namespace dae
 		{
 			int startIndex = static_cast<int>(positions.size());
 
-			positions.push_back(triangle.v0);
-			positions.push_back(triangle.v1);
-			positions.push_back(triangle.v2);
+			positions.emplace_back(triangle.v0);
+			positions.emplace_back(triangle.v1);
+			positions.emplace_back(triangle.v2);
 
-			indices.push_back(startIndex);
-			indices.push_back(++startIndex);
-			indices.push_back(++startIndex);
+			indices.emplace_back(startIndex);
+			indices.emplace_back(++startIndex);
+			indices.emplace_back(++startIndex);
 
-			normals.push_back(triangle.normal);
+			normals.emplace_back(triangle.normal);
 
 			//Not ideal, but making sure all vertices are updated
 			if (!ignoreTransformUpdate)
@@ -171,21 +171,21 @@ namespace dae
 
 		void CalculateNormals()
 		{
-			size_t triangleCount = indices.size() / 3;
+			size_t meshIndices = indices.size();
 
 			normals.clear();
-			normals.reserve(triangleCount);
+			normals.reserve(indices.size() / 3);
 
-			for (size_t i = 0; i < triangleCount; ++i)
+			for (size_t offset = 0; offset < meshIndices; offset += 3)
 			{
-				size_t offset = i * 3;
-
 				Vector3 v0 = positions[indices[offset]];
 				Vector3 v1 = positions[indices[offset + 1]];
 				Vector3 v2 = positions[indices[offset + 2]];
 
-				normals.push_back(Vector3::Cross(v1 - v0, v2 - v0).Normalized());
+				normals.emplace_back(Vector3::Cross(v1 - v0, v2 - v0).Normalized());
 			}
+
+
 		}
 
 		void UpdateAABB() 
@@ -203,11 +203,11 @@ namespace dae
 			transformedNormals.reserve(normals.size());
 
 			for (const auto& position : positions) {
-				transformedPositions.push_back(transform.TransformPoint(position));
+				transformedPositions.emplace_back(transform.TransformPoint(position));
 			}
 
 			for (const auto& normal : normals) {
-				transformedNormals.push_back(transform.TransformVector(normal).Normalized());
+				transformedNormals.emplace_back(transform.TransformVector(normal).Normalized());
 			}
 
 			transformedAABB = aabb.Transformed(transform);

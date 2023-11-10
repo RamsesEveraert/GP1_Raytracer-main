@@ -52,11 +52,12 @@ namespace dae {
 	Vector3 Vector3::Cross(const Vector3& v1, const Vector3& v2)
 	{
 		//todo w1
-		const float resultX = v1.y * v2.z - v1.z * v2.y;
-		const float resultY = v1.z * v2.x - v1.x * v2.z;
-		const float resultZ = v1.x * v2.y - v1.y * v2.x;
-
-		return Vector3{ resultX, resultY, resultZ };
+		return Vector3 
+		{ 
+			v1.y* v2.z - v1.z * v2.y,
+			v1.z* v2.x - v1.x * v2.z,
+			v1.x* v2.y - v1.y * v2.x
+		};
 	}
 
 	Vector3 Vector3::Project(const Vector3& v1, const Vector3& v2)
