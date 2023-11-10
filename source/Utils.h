@@ -89,60 +89,68 @@ namespace dae
 
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			// Calculate two edges of the triangle
+
+			// Get two edges of triangle
 			Vector3 e1 = triangle.v1 - triangle.v0;
 			Vector3 e2 = triangle.v2 - triangle.v0;
 
-			Vector3 h = Vector3::Cross(ray.direction, e2);
+			// Get the vector perpendicular to ray direction and edge e2 L.H cross
+			Vector3 h = Vector3::Cross(e2, ray.direction);
 
+			// Calculate the dot product of edge e1 and vector h
 			float a = Vector3::Dot(e1, h);
 
-			// Parallel to raydirection
+			// If triangle is parallel return
 			if (dae::AreEqual(a, 0.f)) return false;
 
 			float inv_a = 1.0f / a;
 
 			auto cullMode = triangle.cullMode;
-			if (ignoreHitRecord) {
-				// For shadow: flip the culling mode
-				switch (cullMode) {
+
+			// When computing shadows
+			if (ignoreHitRecord)
+			{
+				//flip for shadows
+				switch (cullMode)
+				{
 				case TriangleCullMode::FrontFaceCulling:
 					cullMode = TriangleCullMode::BackFaceCulling;
 					break;
+
 				case TriangleCullMode::BackFaceCulling:
 					cullMode = TriangleCullMode::FrontFaceCulling;
 					break;
 				}
 			}
 
-			// Culling rules
-			if ((cullMode == TriangleCullMode::FrontFaceCulling && a < 0.0f) ||
-				(cullMode == TriangleCullMode::BackFaceCulling && a > 0.0f))
-				return false;
+			if (cullMode == TriangleCullMode::FrontFaceCulling && a < 0.0f) return false;
+			if (cullMode == TriangleCullMode::BackFaceCulling && a > 0.0f) return false;
 
 			Vector3 s = ray.origin - triangle.v0;
 
-			// Barycentric coordinate u + boundcheck
-			float u = Vector3::Dot(s, h) * inv_a;
+			// barycentric coordinate u
+			float u = Vector3::Dot(s, h) * inv_a;			
 			if (u < 0.0f || u > 1.0f) return false;
 
-			// Barycentric coordinate v + boundcheck
-			Vector3 q = Vector3::Cross(s, e1);
-			float v = Vector3::Dot(ray.direction, q) * inv_a;
+			Vector3 q = Vector3::Cross(e1, s);
+
+			// barycentric coordinate v
+			float v = Vector3::Dot(ray.direction, q) * inv_a;			
 			if (v < 0.0f || u + v > 1.0f) return false;
 
 			float t = Vector3::Dot(e2, q) * inv_a;
 			if (t < ray.min || t > ray.max || t >= hitRecord.t) return false;
 
+			// If intersections are not to be ignored, record the intersection details
 			if (!ignoreHitRecord) {
-				hitRecord.t = t;
-				hitRecord.didHit = true;
+				hitRecord.t = t;  
+				hitRecord.didHit = true; 
 				hitRecord.origin = ray.origin + t * ray.direction;
 				hitRecord.normal = triangle.normal;
 				hitRecord.materialIndex = triangle.materialIndex;
 			}
 
-			return true;
+			return true; 
 		}
 
 
@@ -286,9 +294,9 @@ namespace dae
 					float i0, i1, i2;
 					file >> i0 >> i1 >> i2;
 
-					indices.emplace_back((int)i0 - 1);
-					indices.emplace_back((int)i1 - 1);
-					indices.emplace_back((int)i2 - 1);
+					indices.push_back((int)i0 - 1);
+					indices.push_back((int)i1 - 1);
+					indices.push_back((int)i2 - 1);
 				}
 				//read till end of line and ignore all remaining chars
 				file.ignore(1000, '\n');
