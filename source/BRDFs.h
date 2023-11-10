@@ -11,7 +11,7 @@ namespace dae
 		 * \param cd Diffuse Color
 		 * \return Lambert Diffuse Color
 		 */
-		static ColorRGB Lambert(float kd, const ColorRGB& cd)
+		inline static ColorRGB Lambert(float kd, const ColorRGB& cd)
 		{
 			//todo: W3
 
@@ -19,7 +19,7 @@ namespace dae
 			return (perfectDiffuseReflectant / static_cast<float>(M_PI));
 		}
 
-		static ColorRGB Lambert(const ColorRGB& kd, const ColorRGB& cd)
+		inline static ColorRGB Lambert(const ColorRGB& kd, const ColorRGB& cd)
 		{
 			//todo: W3
 			ColorRGB perfectDiffuseReflectant{ cd * kd };
@@ -35,7 +35,7 @@ namespace dae
 		 * \param n Normal of the Surface
 		 * \return Phong Specular Color
 		 */
-		static ColorRGB Phong(float ks, float exp, const Vector3& l, const Vector3& v, const Vector3& n)
+		inline static ColorRGB Phong(float ks, float exp, const Vector3& l, const Vector3& v, const Vector3& n)
 		{
 			//todo: W3
 			Vector3 reflection{ Vector3::Reflect(l,n)};
@@ -54,7 +54,7 @@ namespace dae
 		 * \param f0 Base reflectivity of a surface based on IOR (Indices Of Refrection), this is different for Dielectrics (Non-Metal) and Conductors (Metal)
 		 * \return
 		 */
-		static ColorRGB FresnelFunction_Schlick(const Vector3& h, const Vector3& v, const ColorRGB& f0)
+		inline static ColorRGB FresnelFunction_Schlick(const Vector3& h, const Vector3& v, const ColorRGB& f0)
 		{
 			//todo: W3
 			const float base{ 1 - Vector3::Dot(h, v) };
@@ -68,7 +68,7 @@ namespace dae
 		 * \param roughness Roughness of the material
 		 * \return BRDF Normal Distribution Term using Trowbridge-Reitz GGX
 		 */
-		static float NormalDistribution_GGX(const Vector3& n, const Vector3& h, float roughness)
+		inline static float NormalDistribution_GGX(const Vector3& n, const Vector3& h, float roughness)
 		{
 			//todo: W3
 			const float dotProduct{ Vector3::Dot(n, h) };
@@ -86,7 +86,7 @@ namespace dae
 		 * \param roughness Roughness of the material
 		 * \return BRDF Geometry Term using SchlickGGX
 		 */
-		static float GeometryFunction_SchlickGGX(const Vector3& n, const Vector3& v, float roughness)
+		inline static float GeometryFunction_SchlickGGX(const Vector3& n, const Vector3& v, float roughness)
 		{
 			//todo: W3
 			const float normalViewDot = Vector3::Dot(n, v);
@@ -108,7 +108,7 @@ namespace dae
 		 * \param roughness Roughness of the material
 		 * \return BRDF Geometry Term using Smith (> SchlickGGX(n,v,roughness) * SchlickGGX(n,l,roughness))
 		 */
-		static float GeometryFunction_Smith(const Vector3& n, const Vector3& v, const Vector3& l, float roughness)
+		inline static float GeometryFunction_Smith(const Vector3& n, const Vector3& v, const Vector3& l, float roughness)
 		{
 			//todo: W3
 			return GeometryFunction_SchlickGGX(n, v, roughness) * GeometryFunction_SchlickGGX(n, l, roughness);

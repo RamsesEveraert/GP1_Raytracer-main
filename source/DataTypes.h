@@ -56,20 +56,25 @@ namespace dae
 	};
 
 	struct AABB {
-		Vector3 min;
-		Vector3 max;
+		Vector3 minAABB;
+		Vector3 maxAABB;
 
 		AABB() = default;
-		AABB(const Vector3& min, const Vector3& max) : min(min), max(max) {}
+		AABB(const Vector3& min, const Vector3& max) : minAABB(min), maxAABB(max) {}
 
-		void Encapsulate(const Vector3& point) {
-			min = Vector3::Min(min, point);
-			max = Vector3::Max(max, point);
+		// Expands the bounding box to include the given point
+		void Encapsulate(const Vector3& point) 
+		{
+			minAABB = Vector3::Min(minAABB, point);
+			maxAABB = Vector3::Max(maxAABB, point);
 		}
 
-		static AABB FromPoints(const std::vector<Vector3>& points) {
+		// Creates an AABB that encapsulates a collection of points
+		static AABB FromPoints(const std::vector<Vector3>& points) 
+		{
 			if (points.empty()) return {};
 
+			// Initialize AABB using the first point
 			AABB aabb(points[0], points[0]);
 			for (const auto& point : points) {
 				aabb.Encapsulate(point);
@@ -77,22 +82,25 @@ namespace dae
 			return aabb;
 		}
 
-		AABB Transformed(const Matrix& transform) const {
-			//8 corners of AABB 
-			std::array<Vector3, 8> corners = { // https://stackoverflow.com/questions/4424579/stdvector-versus-stdarray-in-c
-				transform.TransformPoint(min),
-				transform.TransformPoint({min.x, min.y, max.z}),
-				transform.TransformPoint({min.x, max.y, min.z}),
-				transform.TransformPoint({min.x, max.y, max.z}),
-				transform.TransformPoint({max.x, min.y, min.z}),
-				transform.TransformPoint({max.x, min.y, max.z}),
-				transform.TransformPoint({max.x, max.y, min.z}),
-				transform.TransformPoint(max)
+		AABB Transformed(const Matrix& transform) const 
+		{
+			// Transformes position of each corner
+			std::array<Vector3, 8> corners = 
+			{ // https://stackoverflow.com/questions/4424579/stdvector-versus-stdarray-in-c
+				transform.TransformPoint(minAABB),
+				transform.TransformPoint({minAABB.x, minAABB.y, maxAABB.z}),
+				transform.TransformPoint({minAABB.x, maxAABB.y, minAABB.z}),
+				transform.TransformPoint({minAABB.x, maxAABB.y, maxAABB.z}),
+				transform.TransformPoint({maxAABB.x, minAABB.y, minAABB.z}),
+				transform.TransformPoint({maxAABB.x, minAABB.y, maxAABB.z}),
+				transform.TransformPoint({maxAABB.x, maxAABB.y, minAABB.z}),
+				transform.TransformPoint(maxAABB)
 			};
 
 			AABB transformedAABB = AABB(corners[0], corners[0]);
-			for (const auto& corner : corners) {
-				transformedAABB.Encapsulate(corner);
+			for (const auto& corner : corners) 
+			{
+				transformedAABB.Encapsulate(corner);  // Expand the AABB to include the transformed corners
 			}
 			return transformedAABB;
 		}
@@ -166,7 +174,10 @@ namespace dae
 
 			//Not ideal, but making sure all vertices are updated
 			if (!ignoreTransformUpdate)
+			{
 				UpdateTransforms();
+			}
+				
 		}
 
 		void CalculateNormals()
@@ -174,7 +185,7 @@ namespace dae
 			size_t meshIndices = indices.size();
 
 			normals.clear();
-			normals.reserve(indices.size() / 3);
+			normals.reserve(meshIndices / 3);
 
 			for (size_t offset = 0; offset < meshIndices; offset += 3)
 			{
