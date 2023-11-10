@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include "DataTypes.h"
+#include "Material.h"
 
 struct SDL_Window;
 struct SDL_Surface;
@@ -24,7 +25,10 @@ namespace dae
 		void Render(Scene* pScene) const;
 
 		void RenderPixel(Scene* pScene, uint32_t pixelIndex, float fov, float aspectratio, const Matrix& cameraToWorld, const Vector3& cameraOrigin) const;
-				
+
+		void CalculatePixelCoordinates(uint32_t pixelIndex, float fov, float aspectratio, const Matrix& cameraToWorld, uint32_t& px, uint32_t& py, Vector3& rayDirection) const;
+		dae::ColorRGB CalculateColor(Scene* pScene, const Ray& viewRay, const std::vector<Material*>& materials, const std::vector<Light>& lights) const;
+
 		bool SaveBufferToImage() const;
 
 		void ToggleShadowRendering();

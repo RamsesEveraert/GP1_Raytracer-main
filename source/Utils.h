@@ -89,69 +89,62 @@ namespace dae
 
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-
-			// Get two edges of triangle
+			// Calculate two edges of the triangle
 			Vector3 e1 = triangle.v1 - triangle.v0;
 			Vector3 e2 = triangle.v2 - triangle.v0;
 
-			// Get the vector perpendicular to ray direction and edge e2 L.H cross
-			Vector3 h = Vector3::Cross(e2, ray.direction);
+			Vector3 h = Vector3::Cross(ray.direction, e2);
 
-			// Calculate the dot product of edge e1 and vector h
 			float a = Vector3::Dot(e1, h);
 
-			// If triangle is parallel return
+			// Parallel to raydirection
 			if (dae::AreEqual(a, 0.f)) return false;
 
 			float inv_a = 1.0f / a;
 
 			auto cullMode = triangle.cullMode;
-
-			// When computing shadows
-			if (ignoreHitRecord)
-			{
-				//flip for shadows
-				switch (cullMode)
-				{
+			if (ignoreHitRecord) {
+				// For shadow: flip the culling mode
+				switch (cullMode) {
 				case TriangleCullMode::FrontFaceCulling:
 					cullMode = TriangleCullMode::BackFaceCulling;
 					break;
-
 				case TriangleCullMode::BackFaceCulling:
 					cullMode = TriangleCullMode::FrontFaceCulling;
 					break;
 				}
 			}
 
-			if (cullMode == TriangleCullMode::FrontFaceCulling && a < 0.0f) return false;
-			if (cullMode == TriangleCullMode::BackFaceCulling && a > 0.0f) return false;
+			// Culling rules
+			if ((cullMode == TriangleCullMode::FrontFaceCulling && a < 0.0f) ||
+				(cullMode == TriangleCullMode::BackFaceCulling && a > 0.0f))
+				return false;
 
 			Vector3 s = ray.origin - triangle.v0;
 
-			// barycentric coordinate u u
-			float u = Vector3::Dot(s, h) * inv_a;			
+			// Barycentric coordinate u + boundcheck
+			float u = Vector3::Dot(s, h) * inv_a;
 			if (u < 0.0f || u > 1.0f) return false;
 
-			Vector3 q = Vector3::Cross(e1, s);
-
-			// barycentric coordinate v
-			float v = Vector3::Dot(ray.direction, q) * inv_a;			
+			// Barycentric coordinate v + boundcheck
+			Vector3 q = Vector3::Cross(s, e1);
+			float v = Vector3::Dot(ray.direction, q) * inv_a;
 			if (v < 0.0f || u + v > 1.0f) return false;
 
 			float t = Vector3::Dot(e2, q) * inv_a;
 			if (t < ray.min || t > ray.max || t >= hitRecord.t) return false;
 
-			// If intersections are not to be ignored, record the intersection details
 			if (!ignoreHitRecord) {
-				hitRecord.t = t;  
-				hitRecord.didHit = true; 
+				hitRecord.t = t;
+				hitRecord.didHit = true;
 				hitRecord.origin = ray.origin + t * ray.direction;
 				hitRecord.normal = triangle.normal;
 				hitRecord.materialIndex = triangle.materialIndex;
 			}
 
-			return true; 
+			return true;
 		}
+
 
 	inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray)
 		{
@@ -160,36 +153,41 @@ namespace dae
 		}
 #pragma endregion
 #pragma region TriangeMesh HitTest
-		inline bool SlabTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray)
-		{
-			const auto& aabb = mesh.transformedAABB; 
-			Vector3 invDir = {
-				1.0f / ray.direction.x,
-				1.0f / ray.direction.y,
-				1.0f / ray.direction.z
-			};
 
-			// Perform slab tests
-			float t0x = (aabb.min.x - ray.origin.x) * invDir.x;
-			float t1x = (aabb.max.x - ray.origin.x) * invDir.x;
-			float tmin = std::min(t0x, t1x);
-			float tmax = std::max(t0x, t1x);
+	inline bool SlabTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray)
+	{
+		const auto& aabb = mesh.transformedAABB;
 
-			float t0y = (aabb.min.y - ray.origin.y) * invDir.y;
-			float t1y = (aabb.max.y - ray.origin.y) * invDir.y;
-			tmin = std::max(tmin, std::min(t0y, t1y));
-			tmax = std::min(tmax, std::max(t0y, t1y));
+		Vector3 invDir = {
+			1.0f / ray.direction.x,
+			1.0f / ray.direction.y,
+			1.0f / ray.direction.z
+		};
 
-			float t0z = (aabb.min.z - ray.origin.z) * invDir.z;
-			float t1z = (aabb.max.z - ray.origin.z) * invDir.z;
-			tmin = std::max(tmin, std::min(t0z, t1z));
-			tmax = std::min(tmax, std::max(t0z, t1z));
+		// Credits: Robbe Hijzen for improvements
 
-			// Check if there are intersections within the ray bounds
-			return (tmax >= tmin) && (tmax >= 0) && (tmin < ray.max) && (tmin > ray.min);
-		}
+		// Perform slab tests
+		float tMin = (aabb.minAABB.x - ray.origin.x) * invDir.x;
+		float tMax = (aabb.maxAABB.x - ray.origin.x) * invDir.x;
 
+		if (tMin > tMax) std::swap(tMin, tMax); 
 
+		float tyMin = (aabb.minAABB.y - ray.origin.y) * invDir.y;
+		float tyMax = (aabb.maxAABB.y - ray.origin.y) * invDir.y;
+
+		if (tyMin > tyMax) std::swap(tyMin, tyMax);
+		if ((tMin > tyMax) || (tyMin > tMax)) return false;
+		if (tyMin > tMin) tMin = tyMin;
+		if (tyMax < tMax) tMax = tyMax;
+
+		float tzMin = (aabb.minAABB.z - ray.origin.z) * invDir.z;
+		float tzMax = (aabb.maxAABB.z - ray.origin.z) * invDir.z;
+		
+		if (tzMin > tzMax) std::swap(tzMin, tzMax);
+		if ((tMin > tzMax) || (tzMin > tMax)) return false;
+
+		return true;
+	}
 
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
@@ -288,9 +286,9 @@ namespace dae
 					float i0, i1, i2;
 					file >> i0 >> i1 >> i2;
 
-					indices.push_back((int)i0 - 1);
-					indices.push_back((int)i1 - 1);
-					indices.push_back((int)i2 - 1);
+					indices.emplace_back((int)i0 - 1);
+					indices.emplace_back((int)i1 - 1);
+					indices.emplace_back((int)i2 - 1);
 				}
 				//read till end of line and ignore all remaining chars
 				file.ignore(1000, '\n');

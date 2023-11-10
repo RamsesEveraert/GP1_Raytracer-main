@@ -65,53 +65,63 @@ void Renderer::Render(Scene* pScene) const
 #endif
 	SDL_UpdateWindowSurface(m_pWindow);
 }
-void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, float fov, float aspectratio, const Matrix& cameraToWorld, const Vector3& cameraOrigin) const
+void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, float fov, float aspectratio, const Matrix& cameraToWorld, const Vector3& cameraOrigin) const 
 {
-	auto& materials{ pScene->GetMaterials() };
+	auto& materials = pScene->GetMaterials();
 	auto& lights = pScene->GetLights();
 
-	const uint32_t px{ pixelIndex % m_Width }, py{ static_cast<uint32_t>(pixelIndex * m_InvWidth) };
+	uint32_t px, py;
+	Vector3 rayDirection;
+	CalculatePixelCoordinates(pixelIndex, fov, aspectratio, cameraToWorld, px, py, rayDirection);
 
-	float rx{ px + 0.5f }, ry{ py + 0.5f };
-	float cx{ (2 * (rx * m_InvWidth) - 1) * aspectratio * fov };
-	float cy{(1-(2*(ry * m_InvHeight))) * fov};
-
-	Vector3 rayDirection = Vector3(cx, cy, 1).Normalized();
-
-	rayDirection = cameraToWorld.TransformVector(rayDirection);
 	Ray viewRay(cameraOrigin, rayDirection);
+	ColorRGB finalColor = CalculateColor(pScene, viewRay, materials, lights);
 
+	// Update Color in Buffer
+	finalColor.MaxToOne();
+	m_pBufferPixels[px + (py * m_Width)] = SDL_MapRGB(m_pBuffer->format,
+		static_cast<uint8_t>(finalColor.r * 255),
+		static_cast<uint8_t>(finalColor.g * 255),
+		static_cast<uint8_t>(finalColor.b * 255));
+}
+
+
+void Renderer::CalculatePixelCoordinates(uint32_t pixelIndex, float fov, float aspectratio, const Matrix& cameraToWorld, uint32_t& px, uint32_t& py, Vector3& rayDirection) const 
+{
+	px = pixelIndex % m_Width;
+	py = static_cast<uint32_t>(pixelIndex * m_InvWidth);
+
+	float rx = px + 0.5f, ry = py + 0.5f;
+	float cx = (2 * (rx * m_InvWidth) - 1) * aspectratio * fov;
+	float cy = (1 - (2 * (ry * m_InvHeight))) * fov;
+
+	rayDirection = Vector3(cx, cy, 1).Normalized();
+	rayDirection = cameraToWorld.TransformVector(rayDirection);
+}
+
+ColorRGB Renderer::CalculateColor(Scene* pScene, const Ray& viewRay, const std::vector<Material*>& materials, const std::vector<Light>& lights) const 
+{
 	ColorRGB finalColor{};
-
 	HitRecord closestHit{};
-
-	// Perform ray-object intersection tests
 	pScene->GetClosestHit(viewRay, closestHit);
 
-	// Perform shading calculations
-	if (closestHit.didHit)
-	{
-		for (auto& light : lights)
-		{
+	if (closestHit.didHit) {
+		for (const auto& light : lights) {
 			Vector3 lightRayDirection = LightUtils::GetDirectionToLight(light, closestHit.origin);
-
 			Ray lightRay;
-
 			lightRay.max = lightRayDirection.Normalize();
 			lightRay.origin = closestHit.origin + closestHit.normal * 0.0001f;
 			lightRay.direction = lightRayDirection;
 
-			const float lambertCosLaw{ Vector3::Dot(closestHit.normal, lightRayDirection) };
-
+			const float lambertCosLaw = Vector3::Dot(closestHit.normal, lightRayDirection);
 			if (lambertCosLaw < 0) continue;
-			if (m_IsShadowsActive && pScene->DoesHit(lightRay))	continue;
+			if (m_IsShadowsActive && pScene->DoesHit(lightRay)) continue;
 
-			const ColorRGB BRDFrgb{ materials[closestHit.materialIndex]->Shade(closestHit, lightRayDirection, -viewRay.direction) };
+			const ColorRGB BRDFrgb = materials[closestHit.materialIndex]->Shade(closestHit, lightRayDirection, -viewRay.direction);
 
-			switch (m_CurrentLightingMode)
-			{
+			switch (m_CurrentLightingMode) {
 			case dae::Renderer::LightingMode::ObservedArea:
-				finalColor += ColorRGB{ lambertCosLaw,lambertCosLaw,lambertCosLaw };
+				finalColor += ColorRGB{ lambertCosLaw, lambertCosLaw, lambertCosLaw };
 				break;
 			case dae::Renderer::LightingMode::Radiance:
 				finalColor += LightUtils::GetRadiance(light, closestHit.origin);
@@ -125,19 +135,15 @@ void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, float fov, f
 			default:
 				break;
 			}
-
 		}
 	}
 
-	//Update Color in Buffer
-	finalColor.MaxToOne();
-
-	m_pBufferPixels[px + (py * m_Width)] = SDL_MapRGB(m_pBuffer->format,
-		static_cast<uint8_t>(finalColor.r * 255),
-		static_cast<uint8_t>(finalColor.g * 255),
-		static_cast<uint8_t>(finalColor.b * 255));
-
+	return finalColor;
 }
+
+
+
+
 bool Renderer::SaveBufferToImage() const
 {
 	return SDL_SaveBMP(m_pBuffer, "RayTracing_Buffer.bmp");
