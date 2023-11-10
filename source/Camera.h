@@ -44,13 +44,14 @@ namespace dae
 		{
 			//todo: W2 
 			
-			auto translationMatrix = Matrix::CreateTranslation(origin);
-			auto rotationMatrix = Matrix::CreateRotationX(totalPitch) * Matrix::CreateRotationY(totalYaw);
+			//auto translationMatrix = Matrix::CreateTranslation(origin);
+			//auto rotationMatrix = Matrix::CreateRotationX(totalPitch) * Matrix::CreateRotationY(totalYaw);
 
-			cameraToWorld = rotationMatrix * translationMatrix;
+			cameraToWorld = Matrix::CreateRotationX(totalPitch) * Matrix::CreateRotationY(totalYaw) * Matrix::CreateTranslation(origin);
 			return cameraToWorld;
 
 		}
+
 
 		void Update(Timer* pTimer)
 		{
@@ -59,12 +60,9 @@ namespace dae
 			//Keyboard Input
 			const uint8_t* pKeyboardState = SDL_GetKeyboardState(nullptr);
 
-
 			//Mouse Input
 			int mouseX{}, mouseY{};
 			const uint32_t mouseState = SDL_GetRelativeMouseState(&mouseX, &mouseY);
-
-			//todo: W2
 
 			const float translateSpeed{ 10.f };
 			const float rotateSpeed{ .5f };
@@ -75,56 +73,60 @@ namespace dae
 			int8_t yDirection{ pKeyboardState[SDL_SCANCODE_E] - pKeyboardState[SDL_SCANCODE_Q] };
 
 			bool isTranslating{ xDirection != 0 || yDirection != 0 || zDirection != 0 };
-
-			Vector3 localSpaceForward = cameraToWorld.TransformVector(forward).Normalized();
-			Vector3 localSpaceRight = Vector3::Cross(up, localSpaceForward).Normalized();
-			Vector3 localSpaceUp = Vector3::Cross(localSpaceForward, localSpaceRight);
+			bool needRecalculate{ false };  // Flag to determine if recalculation is needed
 
 			if (isTranslating)
 			{
+				Vector3 localSpaceForward = cameraToWorld.TransformVector(forward).Normalized();
+				Vector3 localSpaceRight = Vector3::Cross(up, localSpaceForward).Normalized();
+				Vector3 localSpaceUp = Vector3::Cross(localSpaceForward, localSpaceRight);
+
 				origin += zDirection * localSpaceForward * translateSpeed * deltaTime;
 				origin += xDirection * localSpaceRight * translateSpeed * deltaTime;
 				origin += yDirection * localSpaceUp * translateSpeed * deltaTime;
+				needRecalculate = true;
 			}
 
-			
-			// https://wiki.libsdl.org/SDL2/SDL_GetRelativeMouseState
+			//https://wiki.libsdl.org/SDL2/SDL_GetRelativeMouseState
 
 			bool isLeftMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(1)) && !static_cast<bool>(mouseState & SDL_BUTTON(3)) };
 			bool isRightMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(3)) && !static_cast<bool>(mouseState & SDL_BUTTON(1)) };
 			bool areBothMouseButtonsPressed{ static_cast<bool>(mouseState & SDL_BUTTON(1)) && static_cast<bool>(mouseState & SDL_BUTTON(3)) };
 
-			bool isMouseMoving{ mouseX != 0.0f || mouseY != 0.0f };
+			bool isMouseMoving = mouseX != 0.0f || mouseY != 0.0f;
 
-			bool isDraggingUp{ areBothMouseButtonsPressed && mouseY != 0.0f };
-
-			if (isLeftMousePressed && isMouseMoving)
+			if ((isLeftMousePressed || isRightMousePressed) && isMouseMoving)
 			{
-				// Move camera forward or backward and rotate based on mouse movement 
-				origin += translateSpeed * mouseY * forward * deltaTime;
-				totalYaw += rotateSpeed * mouseX  * deltaTime;
+				if (isLeftMousePressed)
+				{
+					origin += translateSpeed * mouseY * forward * deltaTime;
+					totalYaw += rotateSpeed * mouseX * deltaTime;
+				}
+
+				if (isRightMousePressed)
+				{
+					totalPitch += rotateSpeed * mouseY * deltaTime;
+					totalYaw += rotateSpeed * mouseX * deltaTime;
+				}
+
+				needRecalculate = true;
 			}
 
-			if (isRightMousePressed && isMouseMoving)
+			if (areBothMouseButtonsPressed && mouseY != 0.0f)
 			{
-				// rotate camera based on mouse movement
-				totalPitch += rotateSpeed * mouseY * deltaTime;
-				totalYaw += rotateSpeed * mouseX * deltaTime;
+				if (!isTranslating)  // Only calculate if not already done
+				{
+					Vector3 localSpaceUp = Vector3::Cross(cameraToWorld.TransformVector(forward).Normalized(), Vector3::Cross(up, cameraToWorld.TransformVector(forward)).Normalized());
+					origin += translateSpeed * mouseY * localSpaceUp * deltaTime;
+				}
+				needRecalculate = true;
 			}
 
-			// Move camera up or down based on mouse movement
-			if (isDraggingUp)
-			{
-				origin += translateSpeed * mouseY * localSpaceUp * deltaTime;
-			}
-
-			
-			bool canRotate{(isLeftMousePressed && isMouseMoving) || (isRightMousePressed && isMouseMoving)};
-
-			if (isTranslating || canRotate)
+			if (needRecalculate)
 			{
 				CalculateCameraToWorld();
 			}
 		}
+
 	};
 }
