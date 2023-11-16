@@ -47,9 +47,13 @@ namespace dae
 
 		void CalculateViewMatrix()
 		{
-			//TODO W1
-			//ONB => invViewMatrix
-			//Inverse(ONB) => ViewMatrix
+			Matrix rotationMatrix = Matrix::CreateRotationX(totalPitch) * Matrix::CreateRotationY(totalYaw);
+			forward = rotationMatrix.GetAxisZ();
+			right = rotationMatrix.GetAxisX();
+			up = rotationMatrix.GetAxisY();
+
+			invViewMatrix = Matrix::CreateLookAtLH(origin, forward, Vector3::UnitY);
+			viewMatrix = invViewMatrix.Inverse();
 
 			//ViewMatrix => Matrix::CreateLookAtLH(...) [not implemented yet]
 			//DirectX Implementation => https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixlookatlh
@@ -65,8 +69,6 @@ namespace dae
 
 		void Update(Timer* pTimer)
 		{
-			
-
 			//Camera Update Logic
 			HandleInputs(pTimer);
 
@@ -101,7 +103,6 @@ namespace dae
 			int mouseX, mouseY;
 			const uint32_t mouseState = SDL_GetRelativeMouseState(&mouseX, &mouseY);
 
-			//Mouse buttons
 			bool isLeftMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(1)) && !static_cast<bool>(mouseState & SDL_BUTTON(3)) }; // prevent double mouse button click
 			bool isRightMousePressed{ static_cast<bool>(mouseState & SDL_BUTTON(3)) && !static_cast<bool>(mouseState & SDL_BUTTON(1)) }; // Prevent double mouse button click
 			bool areBothMouseButtonsPressed{ static_cast<bool>(mouseState & SDL_BUTTON(1)) && static_cast<bool>(mouseState & SDL_BUTTON(3)) };
