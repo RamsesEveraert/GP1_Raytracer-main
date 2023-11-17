@@ -50,14 +50,14 @@ namespace dae
 			Matrix rotationMatrix = Matrix::CreateRotationX(totalPitch) * Matrix::CreateRotationY(totalYaw);
 			forward = rotationMatrix.GetAxisZ();
 			right = rotationMatrix.GetAxisX();
-			up = rotationMatrix.GetAxisY();
+			up = Vector3::UnitY;
 
-			invViewMatrix = Matrix::CreateLookAtLH(origin, forward, Vector3::UnitY);
-			viewMatrix = invViewMatrix.Inverse();
+			// Use the target to create the look-at matrix.
+			viewMatrix = Matrix::CreateLookAtLH(origin, origin + forward, up);
 
-			//ViewMatrix => Matrix::CreateLookAtLH(...) [not implemented yet]
 			//DirectX Implementation => https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixlookatlh
 		}
+
 
 		void CalculateProjectionMatrix()
 		{

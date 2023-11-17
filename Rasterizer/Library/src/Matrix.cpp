@@ -142,12 +142,26 @@ namespace dae {
 		return out;
 	}
 
-	Matrix Matrix::CreateLookAtLH(const Vector3& origin, const Vector3& forward, const Vector3& up)
-	{
-		//TODO W1
+	Matrix Matrix::CreateLookAtLH(const Vector3& eye, const Vector3& target, const Vector3& up) {
+		Vector3 zAxis = (target - eye).Normalized();  // Forward vector
+		Vector3 xAxis = Vector3::Cross(up, zAxis).Normalized();  // Right vector
+		Vector3 yAxis = Vector3::Cross(zAxis, xAxis);  // Up vector
 
-		return {};
+		// Calculate the negative dot product of each axis with the eye position
+		float tx = -Vector3::Dot(xAxis, eye);
+		float ty = -Vector3::Dot(yAxis, eye);
+		float tz = -Vector3::Dot(zAxis, eye);
+
+		
+		return Matrix{
+			{ xAxis.x, yAxis.x, zAxis.x, 0.0f },
+			{ xAxis.y, yAxis.y, zAxis.y, 0.0f },
+			{ xAxis.z, yAxis.z, zAxis.z, 0.0f },
+			{ tx, ty, tz, 1.0f }
+		};
 	}
+
+
 
 	Matrix Matrix::CreatePerspectiveFovLH(float fov, float aspect, float zn, float zf)
 	{
@@ -284,7 +298,7 @@ namespace dae {
 	bool Matrix::operator==(const Matrix& m) const
 	{
 		return data[0] == m.data[0]
-		    && data[1] == m.data[1]
+			&& data[1] == m.data[1]
 			&& data[2] == m.data[2]
 			&& data[3] == m.data[3];
 	}

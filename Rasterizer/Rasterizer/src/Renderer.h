@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <memory>
 
 #include "Camera.h"
 
@@ -41,11 +42,36 @@ namespace dae
 		SDL_Surface* m_pBackBuffer{ nullptr };
 		uint32_t* m_pBackBufferPixels{};
 
-		//float* m_pDepthBufferPixels{};
+		float* m_pDepthBufferPixels{};
 
 		Camera m_Camera{};
 
 		int m_Width{};
 		int m_Height{};
+		float m_AspectRatio{};
+
+	private:
+
+		struct TriangleData 
+		{
+			Vector2 edge0, edge1, edge2;
+			float totalArea;
+			float invTotalArea;
+		};
+
+		void TransformToViewSpace(Vector3& vertex) const;
+		void TransformToProjectionSpace(Vector3& vertex) const;
+		void TransformToScreenSpace(Vector3& vertex) const;
+
+		void PerspectiveDivide(Vector3& vertex) const;
+		void SetCameraSettings(Vector3& vertex) const;
+
+		void RasterizeTriangles(const std::vector<Vertex>& vertices);
+		bool IsPixelInTriangle(const Vector2& point, const Vector3& vertex0, const Vector3& vertex1, const Vector3& vertex2, float& weight0, float& weight1, float& weight2, const TriangleData& triangleData) const;
+		bool PerformDepthTest(int px, int py, float depth) const;
+		void WritePixel(int px, int py, const ColorRGB& color, float depth);
+
+		TriangleData CalculateTriangleData(const Vector3& vertex0, const Vector3& vertex1, const Vector3& vertex2);
+
 	};
 }
