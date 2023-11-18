@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "Camera.h"
+#include "DataTypes.h"
 
 struct SDL_Window;
 struct SDL_Surface;
@@ -33,7 +34,7 @@ namespace dae
 
 		bool SaveBufferToImage() const;
 
-		void VertexTransformationFunction(const std::vector<Vertex>& vertices_in, std::vector<Vertex>& vertices_out) const;
+		void VertexTransformationFunction(const std::vector<Vertex>& vertices_in, std::vector<Vertex_Out>& vertices_out) const;
 
 	private:
 		SDL_Window* m_pWindow{};
@@ -41,6 +42,8 @@ namespace dae
 		SDL_Surface* m_pFrontBuffer{ nullptr };
 		SDL_Surface* m_pBackBuffer{ nullptr };
 		uint32_t* m_pBackBufferPixels{};
+
+		Texture* m_pTestTexture;
 
 		float* m_pDepthBufferPixels{};
 
@@ -52,26 +55,33 @@ namespace dae
 
 	private:
 
-		struct TriangleData 
-		{
-			Vector2 edge0, edge1, edge2;
-			float totalArea;
-			float invTotalArea;
-		};
+		// Weekly assignments
 
-		void TransformToViewSpace(Vector3& vertex) const;
-		void TransformToProjectionSpace(Vector3& vertex) const;
-		void TransformToScreenSpace(Vector3& vertex) const;
+		void AssignmentWeek01();
+		void AssignmentWeek02();
 
-		void PerspectiveDivide(Vector3& vertex) const;
-		void SetCameraSettings(Vector3& vertex) const;
+		// Functions
 
-		void RasterizeTriangles(const std::vector<Vertex>& vertices);
-		bool IsPixelInTriangle(const Vector2& point, const Vector3& vertex0, const Vector3& vertex1, const Vector3& vertex2, float& weight0, float& weight1, float& weight2, const TriangleData& triangleData) const;
+		void RasterizeTriangleStrip(const Mesh& mesh);
+		void RasterizeTriangleList(const Mesh& mesh);
+
+		void TransformToViewSpace(Vector4& vertex) const;
+		void TransformToProjectionSpace(Vector4& vertex) const;
+		void TransformToScreenSpace(Vector4& vertex) const;
+
+		void PerspectiveDivide(Vector4& vertex) const;
+		void SetCameraSettings(Vector4& vertex) const;
+
+		
+		void RasterizeTriangle(const Vertex_Out& v0, const Vertex_Out& v1, const Vertex_Out& v2);
+
+		bool IsPixelInTriangle(const Vector2& point, const Vector3& vertex0, const Vector3& vertex1, const Vector3& vertex2, float& weight0, float& weight1, float& weight2, const Triangle& triangle) const;
 		bool PerformDepthTest(int px, int py, float depth) const;
 		void WritePixel(int px, int py, const ColorRGB& color, float depth);
 
-		TriangleData CalculateTriangleData(const Vector3& vertex0, const Vector3& vertex1, const Vector3& vertex2);
+
+
+		Triangle CalculateTriangleData(const Vector3& vertex0, const Vector3& vertex1, const Vector3& vertex2);
 
 	};
 }
