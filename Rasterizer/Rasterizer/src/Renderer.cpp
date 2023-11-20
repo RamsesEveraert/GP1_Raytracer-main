@@ -32,7 +32,7 @@ namespace dae
 	}
 
 	Renderer::~Renderer()
-	{
+	{ 
 		delete[] m_pDepthBufferPixels;
 	}
 
@@ -166,9 +166,9 @@ namespace dae
 			vertices_out[i].position = Vector4{vertices_in[i].position, 1.f};
 			vertices_out[i].uv = vertices_in[i].uv;
 
-			TransformToViewSpace(vertices_out[i].position);
-			TransformToProjectionSpace(vertices_out[i].position);
-			TransformToScreenSpace(vertices_out[i].position);
+			TransformToViewSpace(vertices_out[i]);
+			TransformToProjectionSpace(vertices_out[i]);
+			TransformToScreenSpace(vertices_out[i]);
 		}
 	}
 
@@ -211,13 +211,13 @@ namespace dae
 	void Renderer::RasterizeTriangle(const Vertex_Out& vertex0, const Vertex_Out& vertex1, const Vertex_Out& vertex2)
 	{
 		// Calculate data for the triangle
-		Triangle triangle = CalculateTriangleData(vertex0.position, vertex1.position, vertex2.position);
+		Triangle triangle = CalculateTriangleData(vertex0, vertex1, vertex2);
 
 		// bounding box for the triangle
-			float minX = std::min({ vertex0.position.x, vertex1.position.x, vertex2.position.x }) - 1;
-			float minY = std::min({ vertex0.position.y, vertex1.position.y, vertex2.position.y }) - 1;
-			float maxX = std::max({ vertex0.position.x, vertex1.position.x, vertex2.position.x }) + 1;
-			float maxY = std::max({ vertex0.position.y, vertex1.position.y, vertex2.position.y }) + 1;
+			float minX = std::min({ vertex0.position.x, vertex1.position.x, vertex2.position.x });
+			float minY = std::min({ vertex0.position.y, vertex1.position.y, vertex2.position.y });
+			float maxX = std::max({ vertex0.position.x, vertex1.position.x, vertex2.position.x });
+			float maxY = std::max({ vertex0.position.y, vertex1.position.y, vertex2.position.y });
 
 			int boxLeft = std::max(0, static_cast<int>(minX));
 			int boxTop = std::max(0, static_cast<int>(minY));
@@ -231,7 +231,7 @@ namespace dae
 					Vector2 pixel{ px + 0.5f, py + 0.5f };
 					float weight0, weight1, weight2;
 
-					if (!IsPixelInTriangle(pixel, vertex0.position, vertex1.position, vertex2.position, weight0, weight1, weight2, triangle))
+					if (!IsPixelInTriangle(pixel, vertex0, vertex1, vertex2, weight0, weight1, weight2, triangle))
 						continue;
 
 					float depth = 1.0f / (weight0 / vertex0.position.z + weight1 / vertex1.position.z + weight2 / vertex2.position.z);
@@ -251,11 +251,11 @@ namespace dae
 			}
 	}
 
-	bool Renderer::IsPixelInTriangle(const Vector2& point, const Vector3& vertex0, const Vector3& vertex1, const Vector3& vertex2, float& weight0, float& weight1, float& weight2, const Triangle& triangle) const
+	bool Renderer::IsPixelInTriangle(const Vector2& point, const Vertex_Out& vertex0, const Vertex_Out& vertex1, const Vertex_Out& vertex2, float& weight0, float& weight1, float& weight2, const Triangle& triangle) const
 	{
-		Vector2 pointToVertex0 = point - vertex0.GetXY();
-		Vector2 pointToVertex1 = point - vertex1.GetXY();
-		Vector2 pointToVertex2 = point - vertex2.GetXY();
+		Vector2 pointToVertex0 = point - vertex0.position.GetXY();
+		Vector2 pointToVertex1 = point - vertex1.position.GetXY();
+		Vector2 pointToVertex2 = point - vertex2.position.GetXY();
 
 		// Calculate areas : must have the same sign 
 		float area0 = Vector2::Cross(triangle.edge1, pointToVertex1);
@@ -303,41 +303,41 @@ namespace dae
 
 	
 
-	void Renderer::TransformToViewSpace(Vector4& vertex) const
+	void Renderer::TransformToViewSpace(Vertex_Out& vertex) const
 	{
-		vertex = m_Camera.viewMatrix.TransformPoint(vertex);
+		vertex.position = m_Camera.viewMatrix.TransformPoint(vertex.position);
 	}
 
-	void Renderer::TransformToProjectionSpace(Vector4& vertex) const
+	void Renderer::TransformToProjectionSpace(Vertex_Out& vertex) const
 	{
 		SetCameraSettings(vertex);
 		PerspectiveDivide(vertex);
 	}
 
-	void Renderer::TransformToScreenSpace(Vector4& vertex) const
+	void Renderer::TransformToScreenSpace(Vertex_Out& vertex) const
 	{
-		vertex.x = (vertex.x + 1) * 0.5f * m_Width;
-		vertex.y = (1 - vertex.y) * 0.5f * m_Height;
+		vertex.position.x = (vertex.position.x + 1) * 0.5f * m_Width;
+		vertex.position.y = (1 - vertex.position.y) * 0.5f * m_Height;
 	}
 
-	void Renderer::PerspectiveDivide(Vector4& vertex) const
+	void Renderer::PerspectiveDivide(Vertex_Out& vertex) const
 	{
-		vertex.x /= vertex.z;
-		vertex.y /= vertex.z;
+		vertex.position.x /= vertex.position.z;
+		vertex.position.y /= vertex.position.z;
 	}
 
-	void Renderer::SetCameraSettings(Vector4& vertex) const
+	void Renderer::SetCameraSettings(Vertex_Out& vertex) const
 	{
-		vertex.x /= m_AspectRatio * m_Camera.fov;
-		vertex.y /= m_Camera.fov;
+		vertex.position.x /= m_AspectRatio * m_Camera.fov;
+		vertex.position.y /= m_Camera.fov;
 	}
 
-	Triangle Renderer::CalculateTriangleData(const Vector3& vertex0, const Vector3& vertex1, const Vector3& vertex2)
+	Triangle Renderer::CalculateTriangleData(const Vertex_Out& vertex0, const Vertex_Out& vertex1, const Vertex_Out& vertex2)
 	{
 		Triangle data;
-		data.edge0 = (vertex1 - vertex0).GetXY();
-		data.edge1 = (vertex2 - vertex1).GetXY();
-		data.edge2 = (vertex0 - vertex2).GetXY();
+		data.edge0 = (vertex1.position - vertex0.position).GetXY();
+		data.edge1 = (vertex2.position - vertex1.position).GetXY();
+		data.edge2 = (vertex0.position - vertex2.position).GetXY();
 
 		data.totalArea = Vector2::Cross(data.edge0, -data.edge2);
 		data.invTotalArea = 1 / data.totalArea;

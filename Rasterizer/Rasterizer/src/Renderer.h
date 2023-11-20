@@ -65,23 +65,23 @@ namespace dae
 		void RasterizeTriangleStrip(const Mesh& mesh);
 		void RasterizeTriangleList(const Mesh& mesh);
 
-		void TransformToViewSpace(Vector4& vertex) const;
-		void TransformToProjectionSpace(Vector4& vertex) const;
-		void TransformToScreenSpace(Vector4& vertex) const;
+		void TransformToViewSpace(Vertex_Out& vertex) const;
+		void TransformToProjectionSpace(Vertex_Out& vertex) const;
+		void TransformToScreenSpace(Vertex_Out& vertex) const;
 
-		void PerspectiveDivide(Vector4& vertex) const;
-		void SetCameraSettings(Vector4& vertex) const;
+		void PerspectiveDivide(Vertex_Out& vertex) const;
+		void SetCameraSettings(Vertex_Out& vertex) const;
 
 		
 		void RasterizeTriangle(const Vertex_Out& v0, const Vertex_Out& v1, const Vertex_Out& v2);
 
-		bool IsPixelInTriangle(const Vector2& point, const Vector3& vertex0, const Vector3& vertex1, const Vector3& vertex2, float& weight0, float& weight1, float& weight2, const Triangle& triangle) const;
+		bool IsPixelInTriangle(const Vector2& point, const Vertex_Out& vertex0, const Vertex_Out& vertex1, const Vertex_Out& vertex2, float& weight0, float& weight1, float& weight2, const Triangle& triangle) const;
 		bool PerformDepthTest(int px, int py, float depth) const;
 		void WritePixel(int px, int py, const ColorRGB& color, float depth);
 
 
 
-		Triangle CalculateTriangleData(const Vector3& vertex0, const Vector3& vertex1, const Vector3& vertex2);
+		Triangle CalculateTriangleData(const Vertex_Out& vertex0, const Vertex_Out& vertex1, const Vertex_Out& vertex2);
 
 	};
 }
