@@ -35,6 +35,8 @@ namespace dae
 		bool SaveBufferToImage() const;
 
 		void VertexTransformationFunction(const std::vector<Vertex>& vertices_in, std::vector<Vertex_Out>& vertices_out) const;
+		void ToggleDebugDepthBuffer();
+
 
 	private:
 		SDL_Window* m_pWindow{};
@@ -51,7 +53,8 @@ namespace dae
 
 		int m_Width{};
 		int m_Height{};
-		float m_AspectRatio{};
+
+		bool m_DebugDepthBuffer{false};
 
 	private:
 
@@ -66,7 +69,6 @@ namespace dae
 		void RasterizeTriangleList(const Mesh& mesh);
 
 		void TransformToViewSpace(Vertex_Out& vertex) const;
-		void TransformToProjectionSpace(Vertex_Out& vertex) const;
 		void TransformToScreenSpace(Vertex_Out& vertex) const;
 
 		void PerspectiveDivide(Vertex_Out& vertex) const;

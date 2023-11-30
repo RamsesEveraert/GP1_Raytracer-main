@@ -69,6 +69,8 @@ int main(int argc, char* args[])
 					takeScreenshot = true;
 				if (e.key.keysym.scancode == SDL_SCANCODE_F6)
 					pTimer->StartBenchmark(10);
+				if (e.key.keysym.scancode == SDL_SCANCODE_F4)
+				pRenderer->ToggleDebugDepthBuffer();
 				break;
 			}
 		}

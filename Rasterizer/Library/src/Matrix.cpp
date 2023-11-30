@@ -153,11 +153,12 @@ namespace dae {
 		float tz = -Vector3::Dot(zAxis, eye);
 
 		
-		return Matrix{
-			{ xAxis.x, yAxis.x, zAxis.x, 0.0f },
-			{ xAxis.y, yAxis.y, zAxis.y, 0.0f },
-			{ xAxis.z, yAxis.z, zAxis.z, 0.0f },
-			{ tx, ty, tz, 1.0f }
+		return Matrix
+		{
+			{ xAxis.x,	yAxis.x, zAxis.x,	0.0f },
+			{ xAxis.y,	yAxis.y, zAxis.y,	0.0f },
+			{ xAxis.z,	yAxis.z, zAxis.z,	0.0f },
+			{ tx,		ty,		 tz,		1.0f }
 		};
 	}
 
@@ -166,8 +167,15 @@ namespace dae {
 	Matrix Matrix::CreatePerspectiveFovLH(float fov, float aspect, float zn, float zf)
 	{
 		//TODO W3
+		return Matrix
+		{
+			{ 1/(aspect * fov),	0,		0,				0 },
+			{ 0,				1/fov,	0,				0 },
+			{ 0,				0,		zf/(zf-zn),		1 },
+			{ 0,				0,		-zn*zf/(zf-zn),	0 }
+		};
 
-		return {};
+		
 	}
 
 	Vector3 Matrix::GetAxisX() const
@@ -248,6 +256,15 @@ namespace dae {
 	Matrix Matrix::CreateScale(const Vector3& s)
 	{
 		return CreateScale(s[0], s[1], s[2]);
+	}
+
+	Matrix Matrix::Identity() {
+		return Matrix{
+			{1.0f, 0.0f, 0.0f, 0.0f},
+			{0.0f, 1.0f, 0.0f, 0.0f},
+			{0.0f, 0.0f, 1.0f, 0.0f},
+			{0.0f, 0.0f, 0.0f, 1.0f}
+		};
 	}
 
 #pragma region Operator Overloads

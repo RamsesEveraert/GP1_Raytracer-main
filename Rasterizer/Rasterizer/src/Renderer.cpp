@@ -15,7 +15,6 @@ namespace dae
 	{
 		//Initialize
 		SDL_GetWindowSize(pWindow, &m_Width, &m_Height);
-		m_AspectRatio = static_cast<float>(m_Width) / m_Height;
 
 		//Create Buffers
 		m_pFrontBuffer = SDL_GetWindowSurface(pWindow);
@@ -29,6 +28,7 @@ namespace dae
 
 		//Initialize Camera
 		m_Camera.Initialize(60.f, { 0.0f,0.0f,-10.f });
+		m_Camera.aspectRatio = static_cast<float>(m_Width) / m_Height;
 	}
 
 	Renderer::~Renderer()
@@ -159,16 +159,25 @@ namespace dae
 	{
 		vertices_out.resize(vertices_in.size());
 
+		Matrix worldMatrix{ Matrix::Identity() };
+
+
+		// Calculate WorldViewProjection matrix
+		Matrix worldViewProjectionMatrix{ worldMatrix * m_Camera.viewMatrix * m_Camera.projectionMatrix };
+
 		for (size_t i = 0; i < vertices_in.size(); ++i)
 		{
 			// Copy over the vertex data
 			vertices_out[i].color = vertices_in[i].color;
-			vertices_out[i].position = Vector4{vertices_in[i].position, 1.f};
+			vertices_out[i].position = Vector4{ vertices_in[i].position, 1.f }; 
 			vertices_out[i].uv = vertices_in[i].uv;
 
-			TransformToViewSpace(vertices_out[i]);
-			TransformToProjectionSpace(vertices_out[i]);
+			// Apply the WorldViewProjection transformation
+			vertices_out[i].position = worldViewProjectionMatrix.TransformPoint(vertices_out[i].position);
+			
+			PerspectiveDivide(vertices_out[i]);
 			TransformToScreenSpace(vertices_out[i]);
+
 		}
 	}
 
@@ -234,19 +243,34 @@ namespace dae
 					if (!IsPixelInTriangle(pixel, vertex0, vertex1, vertex2, weight0, weight1, weight2, triangle))
 						continue;
 
-					float depth = 1.0f / (weight0 / vertex0.position.z + weight1 / vertex1.position.z + weight2 / vertex2.position.z);
-					if (!PerformDepthTest(px, py, depth))
-						continue;
+					float zBufferValue = 1.0f / (weight0 / vertex0.position.z + weight1 / vertex1.position.z + weight2 / vertex2.position.z); // non linear
+
+					// Frustum culling : false = inside frustrum
+					if (zBufferValue < 0.0f || zBufferValue > 1.0f) continue;
+					
+					// Depth test : false = pixel infront
+					int bufferIdx = px + py * m_Width;
+					if (zBufferValue > m_pDepthBufferPixels[bufferIdx]) continue;
+
+					// for color / UV/ normals...  use position.w instead of position.z
+					float viewSpaceDepth = 1.0f / (weight0 / vertex0.position.w + weight1 / vertex1.position.w + weight2 / vertex2.position.w); //  linear
+
 
 					ColorRGB color{ vertex0.color * weight0 + vertex1.color * weight1 + vertex2.color * weight2 };
+
+					if (m_DebugDepthBuffer)
+					{
+						color.r = color.g = color.b = zBufferValue;
+					}
+
 					color.MaxToOne();
 
 
-					Vector2 uv = (vertex0.uv / vertex0.position.z * weight0 + vertex1.uv / vertex1.position.z * weight1 + vertex2.uv / vertex2.position.z * weight2) * depth;
-					if (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f) continue;
-					color *= m_pTestTexture->Sample(uv);
+					//Vector2 uv = (vertex0.uv / vertex0.position.w * weight0 + vertex1.uv / vertex1.position.w * weight1 + vertex2.uv / vertex2.position.w * weight2) * viewSpaceDepth;
+					//if (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f) continue;
+					//color *= m_pTestTexture->Sample(uv);
 
-					WritePixel(px, py, color, depth);
+					WritePixel(px, py, color, viewSpaceDepth);
 				}
 			}
 	}
@@ -279,14 +303,14 @@ namespace dae
 
 
 
-	bool Renderer::PerformDepthTest(int px, int py, float depth) const
+	bool Renderer::PerformDepthTest(int px, int py, float zBufferValue) const
 	{
 		int idx = px + py * m_Width;
 		assert(idx < m_Width * m_Height && "index out of bounds");
-		return depth < m_pDepthBufferPixels[idx];
+		return zBufferValue < m_pDepthBufferPixels[idx];
 	}
 
-	void Renderer::WritePixel(int px, int py, const ColorRGB& color, float depth)
+	void Renderer::WritePixel(int px, int py, const ColorRGB& color, float zBufferValue)
 	{
 		int idx = px + py * m_Width;
 		assert(idx < m_Width * m_Height && "index out of bounds");
@@ -298,7 +322,7 @@ namespace dae
 			static_cast<uint8_t>(color.b * 255)
 		);
 
-		m_pDepthBufferPixels[idx] = depth;
+		m_pDepthBufferPixels[idx] = zBufferValue;
 	}
 
 	
@@ -306,12 +330,6 @@ namespace dae
 	void Renderer::TransformToViewSpace(Vertex_Out& vertex) const
 	{
 		vertex.position = m_Camera.viewMatrix.TransformPoint(vertex.position);
-	}
-
-	void Renderer::TransformToProjectionSpace(Vertex_Out& vertex) const
-	{
-		SetCameraSettings(vertex);
-		PerspectiveDivide(vertex);
 	}
 
 	void Renderer::TransformToScreenSpace(Vertex_Out& vertex) const
@@ -322,13 +340,14 @@ namespace dae
 
 	void Renderer::PerspectiveDivide(Vertex_Out& vertex) const
 	{
-		vertex.position.x /= vertex.position.z;
-		vertex.position.y /= vertex.position.z;
+		vertex.position.x /= vertex.position.w;
+		vertex.position.y /= vertex.position.w;
+		vertex.position.z /= vertex.position.w;
 	}
 
 	void Renderer::SetCameraSettings(Vertex_Out& vertex) const
 	{
-		vertex.position.x /= m_AspectRatio * m_Camera.fov;
+		vertex.position.x /= m_Camera.aspectRatio * m_Camera.fov;
 		vertex.position.y /= m_Camera.fov;
 	}
 
@@ -343,6 +362,12 @@ namespace dae
 		data.invTotalArea = 1 / data.totalArea;
 
 		return data;
+	}
+
+
+	void Renderer::ToggleDebugDepthBuffer()
+	{
+		m_DebugDepthBuffer = !m_DebugDepthBuffer;
 	}
 
 }
