@@ -3,16 +3,17 @@
 #include "vector"
 #include "Texture.h"
 
+#include <memory>
+
 namespace dae
 {
 	struct Vertex
 	{
 		Vector3 position{};
-		ColorRGB color{colors::White};
+		ColorRGB color{ colors::White };
 		Vector2 uv{}; //W2
 		Vector3 normal{}; //W4
 		Vector3 tangent{}; //W4
-		//Vector3 viewDirection{}; //W4
 	};
 
 	struct Vertex_Out
@@ -22,7 +23,7 @@ namespace dae
 		Vector2 uv{};
 		Vector3 normal{};
 		Vector3 tangent{};
-		//Vector3 viewDirection{};
+		Vector3 viewDirection{};
 	};
 
 	enum class PrimitiveTopology
@@ -39,14 +40,5 @@ namespace dae
 
 		std::vector<Vertex_Out> vertices_out{};
 		Matrix worldMatrix{};
-
-		Texture* m_pTexture{};
-	};
-
-	struct Triangle
-	{
-		Vector2 edge0{}, edge1{}, edge2{};
-		float totalArea{};
-		float invTotalArea{};
 	};
 }

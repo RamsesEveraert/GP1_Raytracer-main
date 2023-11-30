@@ -2,10 +2,10 @@
 
 #include <cstdint>
 #include <vector>
-#include <memory>
 
 #include "Camera.h"
 #include "DataTypes.h"
+#include "ColorRGB.h"
 
 struct SDL_Window;
 struct SDL_Surface;
@@ -15,6 +15,7 @@ namespace dae
 	class Texture;
 	struct Mesh;
 	struct Vertex;
+	struct Vertex_Out;
 	class Timer;
 	class Scene;
 
@@ -33,10 +34,11 @@ namespace dae
 		void Render();
 
 		bool SaveBufferToImage() const;
-
-		void VertexTransformationFunction(const std::vector<Vertex>& vertices_in, std::vector<Vertex_Out>& vertices_out) const;
 		void ToggleDebugDepthBuffer();
+		void ToggleDebugRotation();
+		void ToggleNormalMapping();
 
+		void VertexTransformationFunction(Mesh& mesh) const;
 
 	private:
 		SDL_Window* m_pWindow{};
@@ -45,45 +47,34 @@ namespace dae
 		SDL_Surface* m_pBackBuffer{ nullptr };
 		uint32_t* m_pBackBufferPixels{};
 
-		Texture* m_pTestTexture;
-
 		float* m_pDepthBufferPixels{};
 
 		Camera m_Camera{};
 
+		Vector3 m_GlobalLightDirection{ 0.577f, -0.577f, 0.577f };
+		float m_Shininess{ 25.0f };
+
+		// mesh debug 
+		Mesh m_Mesh{};
+		Texture* m_pAlbedoTexture;
+		Texture* m_pNormalTexture;
+		Texture* m_pGlossTexture;
+		Texture* m_pSpecularTexture;
+		bool m_IsMeshRotating{ true };
+		// ====================
+
 		int m_Width{};
 		int m_Height{};
+		float m_AspectRatio{};
 
-		bool m_DebugDepthBuffer{false};
+		bool m_DebugDepthBuffer{};
+		bool m_NormalMapping{ false };
 
 	private:
-
-		// Weekly assignments
-
-		void AssignmentWeek01();
-		void AssignmentWeek02();
-
-		// Functions
-
 		void RasterizeTriangleStrip(const Mesh& mesh);
 		void RasterizeTriangleList(const Mesh& mesh);
-
-		void TransformToViewSpace(Vertex_Out& vertex) const;
-		void TransformToScreenSpace(Vertex_Out& vertex) const;
-
-		void PerspectiveDivide(Vertex_Out& vertex) const;
-		void SetCameraSettings(Vertex_Out& vertex) const;
-
-		
 		void RasterizeTriangle(const Vertex_Out& v0, const Vertex_Out& v1, const Vertex_Out& v2);
 
-		bool IsPixelInTriangle(const Vector2& point, const Vertex_Out& vertex0, const Vertex_Out& vertex1, const Vertex_Out& vertex2, float& weight0, float& weight1, float& weight2, const Triangle& triangle) const;
-		bool PerformDepthTest(int px, int py, float depth) const;
-		void WritePixel(int px, int py, const ColorRGB& color, float depth);
-
-
-
-		Triangle CalculateTriangleData(const Vertex_Out& vertex0, const Vertex_Out& vertex1, const Vertex_Out& vertex2);
-
+		void ShadePixel(int pixelIndex, const Vertex_Out& v) const;
 	};
 }
