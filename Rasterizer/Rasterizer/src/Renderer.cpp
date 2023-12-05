@@ -68,7 +68,18 @@ namespace dae
 		//Lock BackBuffer
 		SDL_LockSurface(m_pBackBuffer);
 
-		// Render Test mesh
+		// Assignment
+		RenderMesh();
+
+		//@END
+		//Update SDL Surface
+		SDL_UnlockSurface(m_pBackBuffer);
+		SDL_BlitSurface(m_pBackBuffer, 0, m_pFrontBuffer, 0);
+		SDL_UpdateWindowSurface(m_pWindow);
+	}
+
+	void Renderer::RenderMesh()
+	{
 		VertexTransformationFunction(m_Mesh);
 
 		switch (m_Mesh.primitiveTopology)
@@ -81,47 +92,34 @@ namespace dae
 			RasterizeTriangleStrip(m_Mesh);
 			break;
 		}
-
-		//@END
-		//Update SDL Surface
-		SDL_UnlockSurface(m_pBackBuffer);
-		SDL_BlitSurface(m_pBackBuffer, 0, m_pFrontBuffer, 0);
-		SDL_UpdateWindowSurface(m_pWindow);
 	}
+
 
 	void Renderer::VertexTransformationFunction(Mesh& mesh) const
 	{
-		const auto& verticesIn = mesh.vertices;
-		auto& verticesOut = mesh.vertices_out;
 
+		// match size of vertices_out with the max vertices of the mesh
+		mesh.vertices_out.resize(mesh.vertices.size());
+
+		// Calculate WorldViewProjection matrix
 		Matrix worldViewProjectionMatrix = mesh.worldMatrix * m_Camera.viewMatrix * m_Camera.projectionMatrix;
 
-		verticesOut.resize(verticesIn.size());
-
-		for (size_t i = 0; i < verticesIn.size(); ++i)
+		for (size_t i = 0; i < mesh.vertices.size(); ++i)
 		{
-			Vertex_Out& vertex = verticesOut[i];
-
 			// Convert Vertex to Vertex_Out
-			vertex.position = { verticesIn[i].position, 0.0f };
-			vertex.color = verticesIn[i].color;
-			vertex.uv = verticesIn[i].uv;
-			vertex.normal = mesh.worldMatrix.TransformVector(verticesIn[i].normal);
-			vertex.tangent = mesh.worldMatrix.TransformVector(verticesIn[i].tangent);
+			mesh.vertices_out[i].position = {mesh.vertices[i].position, 1.0f};
+			mesh.vertices_out[i].color = mesh.vertices[i].color;
+			mesh.vertices_out[i].uv = mesh.vertices[i].uv;
+			mesh.vertices_out[i].normal = mesh.worldMatrix.TransformVector(mesh.vertices[i].normal);
+			mesh.vertices_out[i].tangent = mesh.worldMatrix.TransformVector(mesh.vertices[i].tangent);
 
-			vertex.position = worldViewProjectionMatrix.TransformPoint(vertex.position);
+			mesh.vertices_out[i].position = worldViewProjectionMatrix.TransformPoint(mesh.vertices_out[i].position);
 
-			Vector3 worldPosition = mesh.worldMatrix.TransformPoint(vertex.position);
-			vertex.viewDirection = (worldPosition - m_Camera.origin).Normalized();
+			Vector3 worldPosition = mesh.worldMatrix.TransformPoint(mesh.vertices_out[i].position);
+			mesh.vertices_out[i].viewDirection = (worldPosition - m_Camera.origin).Normalized();
 
-			// Perspective divide
-			vertex.position.x /= vertex.position.w;
-			vertex.position.y /= vertex.position.w;
-			vertex.position.z /= vertex.position.w;
-
-			// Transform to screen space
-			vertex.position.x = (vertex.position.x + 1) * 0.5f * m_Width;
-			vertex.position.y = (1 - vertex.position.y) * 0.5f * m_Height;
+			PerspectiveDivide(mesh.vertices_out[i]);
+			TransformToScreenSpace(mesh.vertices_out[i]);
 		}
 	}
 
@@ -145,6 +143,7 @@ namespace dae
 		m_NormalMapping = !m_NormalMapping;
 	}
 
+	
 	void Renderer::RasterizeTriangleStrip(const Mesh& mesh)
 	{
 		for (size_t i = 2; i < mesh.indices.size(); ++i)
@@ -253,6 +252,19 @@ namespace dae
 				ShadePixel(pixelIndex, pixelVertex);
 			}
 		}
+	}
+
+	void Renderer::TransformToScreenSpace(Vertex_Out& vertex) const
+	{
+		vertex.position.x = (vertex.position.x + 1) * 0.5f * m_Width;
+		vertex.position.y = (1 - vertex.position.y) * 0.5f * m_Height;
+	}
+
+	void Renderer::PerspectiveDivide(Vertex_Out& vertex) const
+	{
+		vertex.position.x /= vertex.position.w;
+		vertex.position.y /= vertex.position.w;
+		vertex.position.z /= vertex.position.w;
 	}
 
 	void Renderer::ShadePixel(int pixelIndex, const Vertex_Out& v) const

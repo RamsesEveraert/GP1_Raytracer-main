@@ -42,12 +42,15 @@ namespace dae
 		Matrix projectionMatrix{};
 		Matrix viewMatrix{};
 
-		void Initialize(float _fovAngle = 90.f, Vector3 _origin = {0.f,0.f,0.f})
+		void Initialize(float _fovAngle = 90.f, Vector3 _origin = {0.f,0.f,0.f}, float _near = 0.5f, float _far = 1000.f)
 		{
 			fovAngle = _fovAngle;
 			fov = tanf((fovAngle * TO_RADIANS) / 2.f);
 
 			origin = _origin;
+
+			near = _near;
+			far = _far;
 		}
 
 		void CalculateViewMatrix()

@@ -56,10 +56,10 @@ namespace dae
 
 		// mesh debug 
 		Mesh m_Mesh{};
-		Texture* m_pAlbedoTexture;
-		Texture* m_pNormalTexture;
-		Texture* m_pGlossTexture;
-		Texture* m_pSpecularTexture;
+		Texture* m_pAlbedoTexture{ nullptr };
+		Texture* m_pNormalTexture{ nullptr };
+		Texture* m_pGlossTexture{ nullptr };
+		Texture* m_pSpecularTexture{ nullptr };
 		bool m_IsMeshRotating{ true };
 		// ====================
 
@@ -71,9 +71,15 @@ namespace dae
 		bool m_NormalMapping{ false };
 
 	private:
+
+		void RenderMesh();
+
 		void RasterizeTriangleStrip(const Mesh& mesh);
 		void RasterizeTriangleList(const Mesh& mesh);
 		void RasterizeTriangle(const Vertex_Out& v0, const Vertex_Out& v1, const Vertex_Out& v2);
+
+		void PerspectiveDivide(Vertex_Out& vertex) const;
+		void TransformToScreenSpace(Vertex_Out& vertex) const;
 
 		void ShadePixel(int pixelIndex, const Vertex_Out& v) const;
 	};

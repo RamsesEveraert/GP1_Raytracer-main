@@ -69,7 +69,7 @@ int main(int argc, char* args[])
 					takeScreenshot = true;
 				if (e.key.keysym.scancode == SDL_SCANCODE_F6)
 					pTimer->StartBenchmark(10);
-				if (e.key.keysym.scancode == SDL_SCANCODE_Z)
+				if (e.key.keysym.scancode == SDL_SCANCODE_W)
 					pRenderer->ToggleDebugDepthBuffer();
 				if (e.key.keysym.scancode == SDL_SCANCODE_R)
 					pRenderer->ToggleDebugRotation();
