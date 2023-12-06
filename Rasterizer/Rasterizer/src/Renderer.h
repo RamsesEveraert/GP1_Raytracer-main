@@ -37,10 +37,22 @@ namespace dae
 		void ToggleDebugDepthBuffer();
 		void ToggleDebugRotation();
 		void ToggleNormalMapping();
+		void CycleLightning();
 
 		void VertexTransformationFunction(Mesh& mesh) const;
 
 	private:
+		enum class LightingMode
+		{
+			ObservedArea, // Lambert Cosine Law
+			Diffuse, 
+			Specular,
+			Combined, // ObservedArea * diffuse * specular
+			Max
+		};
+
+		LightingMode m_CurrentLightingMode;
+
 		SDL_Window* m_pWindow{};
 
 		SDL_Surface* m_pFrontBuffer{ nullptr };
@@ -68,7 +80,7 @@ namespace dae
 		float m_AspectRatio{};
 
 		bool m_DebugDepthBuffer{};
-		bool m_NormalMapping{ false };
+		bool m_NormalMapping{ true };
 
 	private:
 
@@ -81,6 +93,10 @@ namespace dae
 		void PerspectiveDivide(Vertex_Out& vertex) const;
 		void TransformToScreenSpace(Vertex_Out& vertex) const;
 
-		void ShadePixel(int pixelIndex, const Vertex_Out& v) const;
+		float DepthRemap(const float depthz, const float min, const float max);
+
+		void ShadePixel(int pixelIndex, const Vertex_Out& v, float depthz);
+
+		
 	};
 }

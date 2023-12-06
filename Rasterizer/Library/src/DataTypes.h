@@ -40,5 +40,14 @@ namespace dae
 
 		std::vector<Vertex_Out> vertices_out{};
 		Matrix worldMatrix{};
+
+		Matrix scaleMatrix{ Matrix::CreateScale(1.f,1.f,1.f) };
+		Matrix rotateMatrix{};
+		Matrix translateMatrix{};
+
+		void UpdateWorldMatrix()
+		{
+			worldMatrix = scaleMatrix * rotateMatrix * translateMatrix;
+		}
 	};
 }

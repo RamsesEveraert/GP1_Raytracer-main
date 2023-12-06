@@ -67,9 +67,17 @@ int main(int argc, char* args[])
 			case SDL_KEYUP:
 				if (e.key.keysym.scancode == SDL_SCANCODE_X)
 					takeScreenshot = true;
-				if (e.key.keysym.scancode == SDL_SCANCODE_F6)
+				if (e.key.keysym.scancode == SDL_SCANCODE_F3)
 					pTimer->StartBenchmark(10);
-				if (e.key.keysym.scancode == SDL_SCANCODE_W)
+				if (e.key.keysym.scancode == SDL_SCANCODE_F4)
+					pRenderer->ToggleDebugDepthBuffer();
+				if (e.key.keysym.scancode == SDL_SCANCODE_F5)
+					pRenderer->ToggleDebugRotation();
+				if (e.key.keysym.scancode == SDL_SCANCODE_F6)
+					pRenderer->ToggleNormalMapping();
+				if (e.key.keysym.scancode == SDL_SCANCODE_F7)
+					pRenderer->CycleLightning();
+				if (e.key.keysym.scancode == SDL_SCANCODE_Z)
 					pRenderer->ToggleDebugDepthBuffer();
 				if (e.key.keysym.scancode == SDL_SCANCODE_R)
 					pRenderer->ToggleDebugRotation();

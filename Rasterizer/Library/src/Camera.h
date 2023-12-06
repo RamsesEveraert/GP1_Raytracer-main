@@ -58,10 +58,10 @@ namespace dae
 			Matrix rotationMatrix = Matrix::CreateRotationX(totalPitch) * Matrix::CreateRotationY(totalYaw);
 			forward = rotationMatrix.GetAxisZ();
 			right = rotationMatrix.GetAxisX();
-			up = Vector3::UnitY;
+			up = rotationMatrix.GetAxisY();
 
 			// Use the target to create the look-at matrix.
-			viewMatrix = Matrix::CreateLookAtLH(origin, origin + forward, up);
+			viewMatrix = Matrix::CreateLookAtLH(origin, origin + forward, Vector3::UnitY);
 
 			//DirectX Implementation => https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixlookatlh
 		}
@@ -71,7 +71,7 @@ namespace dae
 		{
 			//TODO W3
 			//ProjectionMatrix => Matrix::CreatePerspectiveFovLH(...) [not implemented yet]
-			projectionMatrix = viewMatrix * Matrix::CreatePerspectiveFovLH(fov, aspectRatio, near, far);
+			projectionMatrix =  Matrix::CreatePerspectiveFovLH(fov, aspectRatio, near, far);
 			//DirectX Implementation => https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixperspectivefovlh
 		}
 

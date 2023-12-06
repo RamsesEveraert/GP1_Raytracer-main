@@ -35,6 +35,7 @@ namespace dae
 		Uint8 r, g, b;
 		SDL_GetRGB(m_pSurfacePixels[px + py * m_pSurface->w], m_pSurface->format, &r, &g, &b);
 
+		// normalize
 		return {
 			r / 255.0f,
 			g / 255.0f,
@@ -46,6 +47,7 @@ namespace dae
 	{
 		ColorRGB sample = Sample(uv);
 
+		// range [-1,1]
 		return {
 			2 * sample.r - 1,
 			2 * sample.g - 1,

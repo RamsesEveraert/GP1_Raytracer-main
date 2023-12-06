@@ -142,15 +142,15 @@ namespace dae {
 		return out;
 	}
 
-	Matrix Matrix::CreateLookAtLH(const Vector3& eye, const Vector3& target, const Vector3& up) {
-		Vector3 zAxis = (target - eye).Normalized();  // Forward vector
+	Matrix Matrix::CreateLookAtLH(const Vector3& origin, const Vector3& target, const Vector3& up) {
+		Vector3 zAxis = (target - origin).Normalized();  // Forward vector
 		Vector3 xAxis = Vector3::Cross(up, zAxis).Normalized();  // Right vector
 		Vector3 yAxis = Vector3::Cross(zAxis, xAxis);  // Up vector
 
 		// Calculate the negative dot product of each axis with the eye position
-		float tx = -Vector3::Dot(xAxis, eye);
-		float ty = -Vector3::Dot(yAxis, eye);
-		float tz = -Vector3::Dot(zAxis, eye);
+		float tx = -Vector3::Dot(xAxis, origin);
+		float ty = -Vector3::Dot(yAxis, origin);
+		float tz = -Vector3::Dot(zAxis, origin);
 
 		
 		return Matrix
@@ -172,7 +172,7 @@ namespace dae {
 			{ 1/(aspect * fov),	0,		0,				0 },
 			{ 0,				1/fov,	0,				0 },
 			{ 0,				0,		zf/(zf-zn),		1 },
-			{ 0,				0,		-zn*zf/(zf-zn),	0 }
+			{ 0,				0,		-(zn*zf)/(zf-zn),	0 }
 		};
 
 		
