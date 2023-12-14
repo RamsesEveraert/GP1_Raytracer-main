@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Renderer.h"
-
+#include "Mesh.h"
 namespace dae {
 
 	Renderer::Renderer(SDL_Window* pWindow) :
@@ -20,6 +20,24 @@ namespace dae {
 		{
 			std::cout << "DirectX initialization failed!\n";
 		}
+
+		//Create some data for our mesh
+		std::vector<Vertex_PosCol> vertices{
+			{ { 0.0f,  0.5f, 0.5f}, {1.0f, 0.0f, 0.0f} },
+			{ { 0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f} },
+			{ {-0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f} },
+		};
+
+		/*std::vector<Vertex_PosCol> vertices{
+			{ { 0.f,  3.f, 2.f}, {1.0f, 0.0f, 0.0f} },
+			{ { 3.f, -3.f, 2.f}, {0.0f, 0.0f, 1.0f} },
+			{ {-3.f, -3.f, 2.f}, {0.0f, 1.0f, 0.0f} },
+		};*/
+
+		std::vector<uint32_t> indices{ 0, 1, 2 };
+
+		m_pMesh = new Mesh(m_pDevice, vertices, indices);
+
 	}
 
 	Renderer::~Renderer()
@@ -39,6 +57,8 @@ namespace dae {
 		}
 
 		if (m_pDevice) m_pDevice->Release();
+
+		delete m_pMesh;
 	}
 
 	void Renderer::Update(const Timer* pTimer)
@@ -59,6 +79,8 @@ namespace dae {
 		m_pDeviceContext->ClearDepthStencilView(m_pDepthStencilView, D3D11_CLEAR_DEPTH || D3D11_CLEAR_STENCIL, 1.f, 0.f);
 
 		// 2. Set Pipeline + Invoke Draw Calls (= Render)
+
+		m_pMesh->Render(m_pDeviceContext);
 
 		// 3. Present Backbuffer (Swap)
 		m_pSwapChain->Present(0, 0);
@@ -85,7 +107,7 @@ namespace dae {
 
 		// 2. Create DxGI factory
 
-		IDXGIFactory1* pDxGIFactory{};
+		IDXGIFactory1* pDxGIFactory{nullptr};
 
 		result = CreateDXGIFactory1(__uuidof(IDXGIFactory1),  // compiler-specific extension to get the UUID (Universally Unique Identifier) of the IDXGIFactory1 interface
 			reinterpret_cast<void**>(&pDxGIFactory));

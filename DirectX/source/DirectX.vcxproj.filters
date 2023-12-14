@@ -17,9 +17,6 @@
     <ClInclude Include="Matrix.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="Vector4.h">
-      <Filter>Math</Filter>
-    </ClInclude>
     <ClInclude Include="Math.h">
       <Filter>Math</Filter>
     </ClInclude>
@@ -35,6 +32,11 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="ColorRGB.h">
       <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect.h" />
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="Vector4.h">
+      <Filter>Misc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -56,5 +58,11 @@
       <Filter>Math</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Effect.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
