@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "Renderer.h"
-#include "Mesh.h"
+
+
+
+
 namespace dae {
 
 	Renderer::Renderer(SDL_Window* pWindow) :
@@ -8,6 +11,11 @@ namespace dae {
 	{
 		//Initialize
 		SDL_GetWindowSize(pWindow, &m_Width, &m_Height);
+
+		//Create and Initialize Camera
+		m_pCamera = std::make_unique<Camera>(Vector3::Zero, 45.0f);
+		float aspectRatio = static_cast<float>(m_Width) / m_Height;
+		m_pCamera->Initialize(aspectRatio, 45.0f, Vector3{0.f,0.f,-10.f}, 0.001f, 1000.0f);
 
 		//Initialize DirectX pipeline
 		const HRESULT result = InitializeDirectX();
@@ -22,11 +30,12 @@ namespace dae {
 		}
 
 		//Create some data for our mesh
-		std::vector<Vertex_PosCol> vertices{
+
+		/*std::vector<Vertex_PosCol> vertices{
 			{ { 0.0f,  0.5f, 0.5f}, {1.0f, 0.0f, 0.0f} },
 			{ { 0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f} },
 			{ {-0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f} },
-		};
+		};*/
 
 		/*std::vector<Vertex_PosCol> vertices{
 			{ { 0.f,  3.f, 2.f}, {1.0f, 0.0f, 0.0f} },
@@ -34,10 +43,22 @@ namespace dae {
 			{ {-3.f, -3.f, 2.f}, {0.0f, 1.0f, 0.0f} },
 		};*/
 
-		std::vector<uint32_t> indices{ 0, 1, 2 };
+		std::vector<Vertex_PosCol> vertices{
+			{ {-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f} }, // top left
+			{ { 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f} }, // bottom right
+			{ {-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f} }, // bottom left
+			{ { 0.5f,  0.5f, 0.0f}, {1.0f, 0.0f} }, // top right
+		};
 
-		m_pMesh = new Mesh(m_pDevice, vertices, indices);
+		/*std::vector<uint32_t> indices{ 0, 1, 2 };*/
+		std::vector<uint32_t> indices{
+			0, 1, 2,
+			0, 3, 1
+		};
 
+		m_pMesh = std::make_unique<Mesh>(m_pDevice, vertices, indices);
+		m_pMesh->SetWorldMatrix(Matrix::CreateTranslation(0.0f, 0.0f, 5.0f));
+		m_pMesh->SetDiffuseMap("Resources/uv_grid_2.png");
 	}
 
 	Renderer::~Renderer()
@@ -58,12 +79,12 @@ namespace dae {
 
 		if (m_pDevice) m_pDevice->Release();
 
-		delete m_pMesh;
 	}
 
 	void Renderer::Update(const Timer* pTimer)
 	{
-
+		// Update camera
+		m_pCamera->Update(pTimer);
 	}
 
 
@@ -76,11 +97,11 @@ namespace dae {
 
 		constexpr float color[4] = { 0.f,0.f,0.3f,1.f };
 		m_pDeviceContext->ClearRenderTargetView(m_pRenderTargetView, color);
-		m_pDeviceContext->ClearDepthStencilView(m_pDepthStencilView, D3D11_CLEAR_DEPTH || D3D11_CLEAR_STENCIL, 1.f, 0.f);
+		m_pDeviceContext->ClearDepthStencilView(m_pDepthStencilView, D3D11_CLEAR_DEPTH || D3D11_CLEAR_STENCIL, 1, 0);
 
-		// 2. Set Pipeline + Invoke Draw Calls (= Render)
+		// 2. Set Pipeline + Invoke Draw Calls (= RENDER)
 
-		m_pMesh->Render(m_pDeviceContext);
+		m_pMesh->Render(m_pCamera.get(), m_pDeviceContext);
 
 		// 3. Present Backbuffer (Swap)
 		m_pSwapChain->Present(0, 0);
@@ -124,6 +145,7 @@ namespace dae {
 		SDL_GetVersion(&sysWMinfo.version);
 		SDL_GetWindowWMInfo(m_pWindow, &sysWMinfo);
 
+		// Initialize swapchain
 		DXGI_SWAP_CHAIN_DESC swapChainDesc{};
 		swapChainDesc.BufferDesc.Width = m_Width;
 		swapChainDesc.BufferDesc.Height = m_Height;
@@ -140,6 +162,7 @@ namespace dae {
 		swapChainDesc.Flags = 0;
 		swapChainDesc.OutputWindow = sysWMinfo.info.win.window;
 
+		// Create swapchain
 		result = pDxGIFactory->CreateSwapChain(m_pDevice, &swapChainDesc, &m_pSwapChain);
 
 		if (FAILED(result))
@@ -147,9 +170,9 @@ namespace dae {
 			return result;
 		}
 
-		// 4. Create DepthStencil (DS) & DepthStencilView (DSV)
+		// 4. Create DepthStencil (DS) & DepthStencilView (DSV) : depth buffer to solve visibility problems
 		
-		// DepthStencil
+		// DepthStencil : mask pixels in image, controls pixel is draw before Z-test
 		D3D11_TEXTURE2D_DESC depthStencilDesc{};
 		depthStencilDesc.Width = m_Width;
 		depthStencilDesc.Height = m_Height;
@@ -184,8 +207,9 @@ namespace dae {
 		}
 
 		// 5. Create RenderTarget (RT) & RenderTargetView (RTV)
-
-		// RenderTarget
+		
+		// RenderTarget = RESOURCE: creates resources for drawing + performs drawing operations -> resource: shared by multiple pipeline stages
+		// retrieve back buffer resource from swapchain and create resource view using this pointer
 		result = m_pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&m_pRenderTargetBuffer));
 
 		if (FAILED(result))
@@ -193,7 +217,7 @@ namespace dae {
 			return result;
 		}
 
-		// RenderTargetView
+		// RenderTargetView = VIEW: how a resource is used inthe pipeline
 
 		result = m_pDevice->CreateRenderTargetView(m_pRenderTargetBuffer, nullptr, &m_pRenderTargetView);
 
@@ -202,11 +226,11 @@ namespace dae {
 			return result;
 		}
 
-		// 6. Bind RTV & DSV to output merger state
+		// 6. Bind RTV & DSV to output merger state: active buffers during output merger stage
 		
 		m_pDeviceContext->OMSetRenderTargets(1, &m_pRenderTargetView, m_pDepthStencilView);
 
-		// 7. Set ViewPort
+		// 7. Set ViewPort: where content of backbuffer will be rendered on the screen (used to transform NDC to screenspace)
 
 		D3D11_VIEWPORT viewport{};
 		viewport.Width = static_cast<float>(m_Width);

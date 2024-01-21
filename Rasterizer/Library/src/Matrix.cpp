@@ -267,6 +267,8 @@ namespace dae {
 		};
 	}
 
+
+
 #pragma region Operator Overloads
 	Vector4& Matrix::operator[](int index)
 	{

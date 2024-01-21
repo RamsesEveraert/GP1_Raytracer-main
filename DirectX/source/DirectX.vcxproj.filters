@@ -38,6 +38,8 @@
     <ClInclude Include="Vector4.h">
       <Filter>Misc</Filter>
     </ClInclude>
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -62,6 +64,9 @@
       <Filter>Math</Filter>
     </ClCompile>
     <ClCompile Include="Mesh.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
       <Filter>Math</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,11 +1,13 @@
 #include "pch.h"
-
 #include "Vector4.h"
 
 #include <cassert>
 
 #include "Vector2.h"
 #include "Vector3.h"
+#include <cmath>
+
+#include "MathHelpers.h"
 
 namespace dae
 {
@@ -98,5 +100,11 @@ namespace dae
 		if (index == 2)return z;
 		return w;
 	}
+
+	bool Vector4::operator==(const Vector4& v) const
+	{
+		return AreEqual(x, v.x, .000001f) && AreEqual(y, v.y, .000001f) && AreEqual(z, v.z, .000001f) && AreEqual(w, v.w, .000001f);
+	}
+
 #pragma endregion
 }

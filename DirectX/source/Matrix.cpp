@@ -1,5 +1,4 @@
 #include "pch.h"
-
 #include "Matrix.h"
 
 #include <cassert>
@@ -109,21 +108,21 @@ namespace dae {
 		Vector3 u = a * y - b * x;
 		Vector3 v = c * w - d * z;
 
-		const float det = Vector3::Dot(s, v) + Vector3::Dot(t, u);
+		float det = Vector3::Dot(s, v) + Vector3::Dot(t, u);
 		assert((!AreEqual(det, 0.f)) && "ERROR: determinant is 0, there is no INVERSE!");
-		const float invDet = 1.f / det;
+		float invDet = 1.f / det;
 
 		s *= invDet; t *= invDet; u *= invDet; v *= invDet;
 
-		const Vector3 r0 = Vector3::Cross(b, v) + t * y;
-		const Vector3 r1 = Vector3::Cross(v, a) - t * x;
-		const Vector3 r2 = Vector3::Cross(d, u) + s * w;
-		//Vector3 r3 = Vector3::Cross(u, c) - s * z;
+		Vector3 r0 = Vector3::Cross(b, v) + t * y;
+		Vector3 r1 = Vector3::Cross(v, a) - t * x;
+		Vector3 r2 = Vector3::Cross(d, u) + s * w;
+		Vector3 r3 = Vector3::Cross(u, c) - s * z;
 
 		data[0] = Vector4{ r0.x, r1.x, r2.x, 0.f };
 		data[1] = Vector4{ r0.y, r1.y, r2.y, 0.f };
 		data[2] = Vector4{ r0.z, r1.z, r2.z, 0.f };
-		data[3] = {-Vector3::Dot(b, t),Vector3::Dot(a, t),-Vector3::Dot(d, s),Vector3::Dot(c, s) };
+		data[3] = { { -Vector3::Dot(b, t)},{Vector3::Dot(a, t)},{-Vector3::Dot(d, s)},{Vector3::Dot(c, s)} };
 
 		return *this;
 	}
@@ -144,16 +143,40 @@ namespace dae {
 		return out;
 	}
 
-	Matrix Matrix::CreateLookAtLH(const Vector3& origin, const Vector3& forward, const Vector3& up)
-	{
-		assert(false && "Not Implemented");
-		return {};
+	Matrix Matrix::CreateLookAtLH(const Vector3& origin, const Vector3& target, const Vector3& up) {
+		Vector3 zAxis = (target - origin).Normalized();  // Forward vector
+		Vector3 xAxis = Vector3::Cross(up, zAxis).Normalized();  // Right vector
+		Vector3 yAxis = Vector3::Cross(zAxis, xAxis);  // Up vector
+
+		// Calculate the negative dot product of each axis with the eye position
+		float tx = -Vector3::Dot(xAxis, origin);
+		float ty = -Vector3::Dot(yAxis, origin);
+		float tz = -Vector3::Dot(zAxis, origin);
+
+
+		return Matrix
+		{
+			{ xAxis.x,	yAxis.x, zAxis.x,	0.0f },
+			{ xAxis.y,	yAxis.y, zAxis.y,	0.0f },
+			{ xAxis.z,	yAxis.z, zAxis.z,	0.0f },
+			{ tx,		ty,		 tz,		1.0f }
+		};
 	}
+
+
 
 	Matrix Matrix::CreatePerspectiveFovLH(float fov, float aspect, float zn, float zf)
 	{
-		assert(false && "Not Implemented");
-		return {};
+		//TODO W3
+		return Matrix
+		{
+			{ 1 / (aspect * fov),	0,		0,				0 },
+			{ 0,				1 / fov,	0,				0 },
+			{ 0,				0,		zf / (zf - zn),		1 },
+			{ 0,				0,		-(zn * zf) / (zf - zn),	0 }
+		};
+
+
 	}
 
 	Vector3 Matrix::GetAxisX() const
@@ -236,6 +259,15 @@ namespace dae {
 		return CreateScale(s[0], s[1], s[2]);
 	}
 
+	Matrix Matrix::Identity() {
+		return Matrix{
+			{1.0f, 0.0f, 0.0f, 0.0f},
+			{0.0f, 1.0f, 0.0f, 0.0f},
+			{0.0f, 0.0f, 1.0f, 0.0f},
+			{0.0f, 0.0f, 0.0f, 1.0f}
+		};
+	}
+
 #pragma region Operator Overloads
 	Vector4& Matrix::operator[](int index)
 	{
@@ -280,5 +312,14 @@ namespace dae {
 
 		return *this;
 	}
+
+	bool Matrix::operator==(const Matrix& m) const
+	{
+		return data[0] == m.data[0]
+			&& data[1] == m.data[1]
+			&& data[2] == m.data[2]
+			&& data[3] == m.data[3];
+	}
+
 #pragma endregion
 }

@@ -1,11 +1,17 @@
 #pragma once
 
+#include "Mesh.h"
+#include "Camera.h"
+
+#include <memory>
+
 struct SDL_Window;
 struct SDL_Surface;
 
 namespace dae
 {
 	class Mesh;
+	struct Camera;
 	class Renderer final
 	{
 	public:
@@ -28,7 +34,8 @@ namespace dae
 
 		bool m_IsInitialized{ false };
 
-		Mesh* m_pMesh;
+		std::unique_ptr<Mesh> m_pMesh;
+		std::unique_ptr<Camera> m_pCamera;
 
 		// DirectX
 		ID3D11Device* m_pDevice{};

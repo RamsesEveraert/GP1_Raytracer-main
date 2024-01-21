@@ -3,15 +3,13 @@
 #include <SDL_keyboard.h>
 #include <SDL_mouse.h>
 
-#include "Maths.h"
+#include "Math.h"
 #include "Timer.h"
 
 namespace dae
 {
 	struct Camera
 	{
-		Camera() = default;
-
 		Camera(const Vector3& _origin, float _fovAngle):
 			origin{_origin},
 			fovAngle{_fovAngle}
@@ -30,8 +28,8 @@ namespace dae
 		float totalPitch{};
 		float totalYaw{};
 
-		float near{0.5f};
-		float far{1000.f};
+		float nearPlane{0.5f};
+		float farPlane{1000.f};
 
 		float aspectRatio{};
 
@@ -42,15 +40,16 @@ namespace dae
 		Matrix projectionMatrix{};
 		Matrix viewMatrix{};
 
-		void Initialize(float _fovAngle = 90.f, Vector3 _origin = {0.f,0.f,0.f}, float _near = 0.5f, float _far = 1000.f)
+		void Initialize(float _aspectratio, float _fovAngle = 90.f, Vector3 _origin = {0.f,0.f,0.f}, float _near = 0.5f, float _far = 1000.f)
 		{
 			fovAngle = _fovAngle;
 			fov = tanf((fovAngle * TO_RADIANS) / 2.f);
 
+			aspectRatio = _aspectratio;
 			origin = _origin;
 
-			near = _near;
-			far = _far;
+			nearPlane = _near;
+			farPlane = _far;
 		}
 
 		void CalculateViewMatrix()
@@ -69,13 +68,11 @@ namespace dae
 		 
 		void CalculateProjectionMatrix()
 		{
-			//TODO W3
-			//ProjectionMatrix => Matrix::CreatePerspectiveFovLH(...) [not implemented yet]
-			projectionMatrix =  Matrix::CreatePerspectiveFovLH(fov, aspectRatio, near, far);
+			projectionMatrix =  Matrix::CreatePerspectiveFovLH(fov, aspectRatio, nearPlane, farPlane);
 			//DirectX Implementation => https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixperspectivefovlh
 		}
 
-		void Update(Timer* pTimer)
+		void Update(const Timer* pTimer)
 		{
 			//Camera Update Logic
 			HandleInputs(pTimer);
@@ -86,7 +83,7 @@ namespace dae
 
 		}
 
-		void HandleInputs(Timer* pTimer)
+		void HandleInputs(const Timer* pTimer)
 		{
 			const float dt = pTimer->GetElapsed();
 			HandleKeyboardInput(dt);
@@ -131,6 +128,16 @@ namespace dae
 				origin -= mouseY * dragSpeed * forward * dt;
 				totalYaw += mouseX * rotationSpeed;
 			}
+		}
+
+		Matrix GetViewMatrix() const
+		{
+			return viewMatrix;
+		}
+
+		Matrix GetProjectionMatrix() const
+		{
+			return projectionMatrix;
 		}
 
 	};
